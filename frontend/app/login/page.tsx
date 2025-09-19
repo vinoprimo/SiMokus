@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { login, logout } from "../../services/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await login({ email, password });
       alert("Login sukses sebagai " + res.user.name);
+      router.push("/dashboard"); // redirect ke dashboard
     } catch (err: any) {
       alert("Login gagal: " + (err.response?.data?.message || err.message));
     }
@@ -21,6 +24,7 @@ export default function LoginPage() {
     try {
       await logout();
       alert("Logout sukses");
+      router.push("/login");
     } catch (err: any) {
       alert("Logout gagal: " + err.message);
     }
