@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
                 <AuthCard
                     logo={
                         <Link href="/">
-                            <ApplicationLogo className="w-20 h-20 fill-current text-gray-500" />
+                            <ApplicationLogo size="lg" />
                         </Link>
                     }>
                     {children}
