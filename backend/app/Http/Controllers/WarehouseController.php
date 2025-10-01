@@ -9,12 +9,13 @@ class WarehouseController extends Controller
 {
     public function index()
     {
-        return Warehouse::with(['spaces', 'fumigations'])->get();
+        return Warehouse::with(['complex', 'spaces', 'fumigations'])->get();
     }
 
     public function store(Request $request)
     {
         $request->validate([
+            'warehouse_complex_id' => 'required|exists:warehouse_complexes,id',
             'name' => 'required',
             'capacity' => 'required|integer',
         ]);
@@ -24,7 +25,7 @@ class WarehouseController extends Controller
 
     public function show(Warehouse $warehouse)
     {
-        return $warehouse->load(['spaces', 'fumigations']);
+        return $warehouse->load(['complex', 'spaces', 'fumigations']);
     }
 
     public function update(Request $request, Warehouse $warehouse)
@@ -39,4 +40,3 @@ class WarehouseController extends Controller
         return response()->noContent();
     }
 }
-
