@@ -18,6 +18,11 @@ export const useAuth = ({ middleware, redirectIfAuthenticated } = {}) => {
             }),
     )
 
+    // 🔍 Tambahin di sini
+useEffect(() => {
+    console.log("User data from API:", user)
+}, [user])
+
     const csrf = () => axios.get('/sanctum/csrf-cookie')
 
     const register = async ({ setErrors, ...props }) => {
