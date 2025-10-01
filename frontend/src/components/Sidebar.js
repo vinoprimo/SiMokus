@@ -22,18 +22,18 @@ export default function Sidebar() {
 
   const superadminMenu = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Kelola Admin", href: "/admins", icon: Users },
-    { label: "Kelola Gudang", href: "/warehouses", icon: Warehouse },
-    { label: "Input Space", href: "/spaces", icon: Box },
-    { label: "Jadwal Fumigasi", href: "/fumigations", icon: Calendar },
-    { label: "Jadwal Spraying", href: "/sprayings", icon: SprayCan },
+    { label: "Kelola Admin", href: "/kelola-admin", icon: Users },
+    { label: "Kelola Gudang", href: "/kelola-gudang", icon: Warehouse },
+    { label: "Input Space", href: "/input-space", icon: Box },
+    { label: "Jadwal Fumigasi", href: "/jadwal-fumigasi", icon: Calendar },
+    { label: "Jadwal Spraying", href: "/jadwal-spraying", icon: SprayCan },
   ]
-
+  
   const adminMenu = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Input Space", href: "/spaces", icon: Box },
-    { label: "Jadwal Fumigasi", href: "/fumigations", icon: Calendar },
-    { label: "Jadwal Spraying", href: "/sprayings", icon: SprayCan },
+    { label: "Input Space", href: "/input-space", icon: Box },
+    { label: "Jadwal Fumigasi", href: "/jadwal-fumigasi", icon: Calendar },
+    { label: "Jadwal Spraying", href: "/jadwal-spraying", icon: SprayCan },
   ]
 
   const menu = user.role === "superadmin" ? superadminMenu : adminMenu

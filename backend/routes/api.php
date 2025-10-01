@@ -4,6 +4,9 @@ use App\Http\Controllers\WarehouseComplexController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\FumigationController;
 use App\Http\Controllers\SpaceController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminController;
 
 Route::middleware('auth:sanctum')->group(function () {
     // User info
@@ -22,5 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------- SPACE / CAPACITY ----------
     Route::apiResource('spaces', SpaceController::class);
+
+    // CRUD Admin
+    Route::apiResource('admins', AdminController::class);
 });
 
