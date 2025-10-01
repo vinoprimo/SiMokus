@@ -6,23 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('warehouses', function (Blueprint $table) {
-            //
+            // tambahkan relasi ke warehouse_complexes
+            $table->foreignId('warehouse_complex_id')
+                  ->after('id')
+                  ->constrained('warehouse_complexes')
+                  ->cascadeOnDelete();
+
+            // kalau kolom location sudah ada di warehouses, hapus
+            if (Schema::hasColumn('warehouses', 'location')) {
+                $table->dropColumn('location');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('warehouses', function (Blueprint $table) {
-            //
+            $table->dropForeign(['warehouse_complex_id']);
+            $table->dropColumn('warehouse_complex_id');
+            $table->string('location')->nullable();
         });
     }
 };
