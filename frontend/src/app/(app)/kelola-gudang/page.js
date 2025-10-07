@@ -4,40 +4,74 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 
 export default function KelolaGudangPage() {
+  const [complexes, setComplexes] = useState([])
   const [warehouses, setWarehouses] = useState([])
-  const [form, setForm] = useState({ name: "", location: "" })
+  const [form, setForm] = useState({
+    name: "",
+    location: "",
+    capacity: "",
+    warehouse_complex_id: "",
+  })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editId, setEditId] = useState(null)
 
   useEffect(() => {
+    fetchComplexes()
     fetchWarehouses()
   }, [])
 
+  const fetchComplexes = async () => {
+    const res = await axios.get("http://localhost:8000/api/warehouse-complexes", {
+      withCredentials: true,
+    })
+    setComplexes(res.data)
+  }
+
   const fetchWarehouses = async () => {
-    const res = await axios.get("http://localhost:8000/api/warehouses", { withCredentials: true })
+    const res = await axios.get("http://localhost:8000/api/warehouses", {
+      withCredentials: true,
+    })
     setWarehouses(res.data)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
     if (editId) {
-      await axios.put(`http://localhost:8000/api/warehouses/${editId}`, form, { withCredentials: true })
+      await axios.put(`http://localhost:8000/api/warehouses/${editId}`, form, {
+        withCredentials: true,
+      })
     } else {
-      await axios.post("http://localhost:8000/api/warehouses", form, { withCredentials: true })
+      await axios.post("http://localhost:8000/api/warehouses", form, {
+        withCredentials: true,
+      })
     }
-    setForm({ name: "", location: "" })
+
+    setForm({
+      name: "",
+      location: "",
+      capacity: "",
+      warehouse_complex_id: "",
+    })
     setEditId(null)
     setIsModalOpen(false)
     fetchWarehouses()
   }
 
   const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:8000/api/warehouses/${id}`, { withCredentials: true })
+    await axios.delete(`http://localhost:8000/api/warehouses/${id}`, {
+      withCredentials: true,
+    })
     fetchWarehouses()
   }
 
   const handleEdit = (warehouse) => {
-    setForm({ name: warehouse.name, location: warehouse.location })
+    setForm({
+      name: warehouse.name,
+      location: warehouse.location,
+      capacity: warehouse.capacity,
+      warehouse_complex_id: warehouse.warehouse_complex_id,
+    })
     setEditId(warehouse.id)
     setIsModalOpen(true)
   }
@@ -49,7 +83,12 @@ export default function KelolaGudangPage() {
       {/* Tombol Tambah */}
       <button
         onClick={() => {
-          setForm({ name: "", location: "" })
+          setForm({
+            name: "",
+            location: "",
+            capacity: "",
+            warehouse_complex_id: "",
+          })
           setEditId(null)
           setIsModalOpen(true)
         }}
@@ -59,11 +98,13 @@ export default function KelolaGudangPage() {
       </button>
 
       {/* Tabel Gudang */}
-      <table className="w-full border border-gray-300">
+      <table className="w-full border border-gray-300 text-sm">
         <thead className="bg-gray-100">
           <tr>
             <th className="border px-4 py-2">Nama Gudang</th>
             <th className="border px-4 py-2">Lokasi</th>
+            <th className="border px-4 py-2">Kapasitas</th>
+            <th className="border px-4 py-2">Kompleks Gudang</th>
             <th className="border px-4 py-2">Aksi</th>
           </tr>
         </thead>
@@ -72,6 +113,10 @@ export default function KelolaGudangPage() {
             <tr key={warehouse.id}>
               <td className="border px-4 py-2">{warehouse.name}</td>
               <td className="border px-4 py-2">{warehouse.location}</td>
+              <td className="border px-4 py-2">{warehouse.capacity}</td>
+              <td className="border px-4 py-2">
+                {warehouse.warehouse_complex?.name || "-"}
+              </td>
               <td className="border px-4 py-2 space-x-2">
                 <button
                   onClick={() => handleEdit(warehouse)}
@@ -115,6 +160,29 @@ export default function KelolaGudangPage() {
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 required
               />
+              <input
+                type="number"
+                placeholder="Kapasitas"
+                className="border p-2 w-full"
+                value={form.capacity}
+                onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+                required
+              />
+              <select
+                className="border p-2 w-full"
+                value={form.warehouse_complex_id}
+                onChange={(e) =>
+                  setForm({ ...form, warehouse_complex_id: e.target.value })
+                }
+                required
+              >
+                <option value="">Pilih Kompleks Gudang</option>
+                {complexes.map((complex) => (
+                  <option key={complex.id} value={complex.id}>
+                    {complex.name}
+                  </option>
+                ))}
+              </select>
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
