@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from "react"
 import axios from "axios"
-import {
-  Building2,
-  Package,
-  Warehouse,
-  Boxes,
-  Factory,
-  Home,
-} from "lucide-react"
+import { Warehouse, Search } from "lucide-react"
 
 export default function KelolaGudangPage() {
   const [warehouses, setWarehouses] = useState([])
@@ -19,20 +12,12 @@ export default function KelolaGudangPage() {
     name: "",
     capacity: "",
   })
+  const [complexForm, setComplexForm] = useState({ name: "", location: "" })
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isComplexModalOpen, setIsComplexModalOpen] = useState(false)
   const [editId, setEditId] = useState(null)
-
-  // Warna + ikon untuk variasi visual
-  const accentColors = [
-    "bg-blue-100 text-blue-700",
-    "bg-green-100 text-green-700",
-    "bg-yellow-100 text-yellow-700",
-    "bg-purple-100 text-purple-700",
-    "bg-pink-100 text-pink-700",
-    "bg-orange-100 text-orange-700",
-  ]
-
-  const icons = [Building2, Warehouse, Boxes, Factory, Package, Home]
+  const [editComplexId, setEditComplexId] = useState(null)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchData()
@@ -47,116 +32,181 @@ export default function KelolaGudangPage() {
     setComplexes(complexRes.data)
   }
 
-  const handleSubmit = async (e) => {
+  const handleWarehouseSubmit = async (e) => {
     e.preventDefault()
-    if (!form.warehouse_complex_id || !form.name || !form.capacity) {
-      alert("Semua field wajib diisi!")
-      return
-    }
-
     if (editId) {
       await axios.put(`http://localhost:8000/api/warehouses/${editId}`, form, { withCredentials: true })
     } else {
       await axios.post("http://localhost:8000/api/warehouses", form, { withCredentials: true })
     }
-
     setForm({ warehouse_complex_id: "", name: "", capacity: "" })
     setEditId(null)
     setIsModalOpen(false)
     fetchData()
   }
 
-  const handleEdit = (warehouse) => {
-    setForm({
-      warehouse_complex_id: warehouse.warehouse_complex_id,
-      name: warehouse.name,
-      capacity: warehouse.capacity,
-    })
-    setEditId(warehouse.id)
-    setIsModalOpen(true)
+  const handleComplexSubmit = async (e) => {
+    e.preventDefault()
+    if (editComplexId) {
+      await axios.put(`http://localhost:8000/api/warehouse-complexes/${editComplexId}`, complexForm, {
+        withCredentials: true,
+      })
+    } else {
+      await axios.post("http://localhost:8000/api/warehouse-complexes", complexForm, { withCredentials: true })
+    }
+    setComplexForm({ name: "", location: "" })
+    setEditComplexId(null)
+    setIsComplexModalOpen(false)
+    fetchData()
   }
 
-  const handleDelete = async (id) => {
+  const handleWarehouseDelete = async (id) => {
     if (confirm("Yakin ingin menghapus gudang ini?")) {
       await axios.delete(`http://localhost:8000/api/warehouses/${id}`, { withCredentials: true })
       fetchData()
     }
   }
 
+  const handleComplexDelete = async (id) => {
+    if (confirm("Yakin ingin menghapus kompleks gudang ini?")) {
+      await axios.delete(`http://localhost:8000/api/warehouse-complexes/${id}`, { withCredentials: true })
+      fetchData()
+    }
+  }
+
+  const filteredComplexes = complexes.filter((complex) =>
+    complex.name.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Kelola Gudang</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Kelola Gudang</h1>
 
-      {/* Tombol tambah gudang */}
-      <button
-        onClick={() => {
-          setForm({ warehouse_complex_id: "", name: "", capacity: "" })
-          setEditId(null)
-          setIsModalOpen(true)
-        }}
-        className="mb-6 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
-      >
-        + Tambah Gudang
-      </button>
+        {/* Search */}
+        <div className="flex items-center border rounded-lg px-3 py-1 bg-white">
+          <Search className="w-4 h-4 text-gray-500 mr-2" />
+          <input
+            type="text"
+            placeholder="Cari kompleks atau gudang..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="outline-none text-sm w-48"
+          />
+        </div>
+      </div>
 
-      {/* Tampilan kompleks */}
-      {complexes.length === 0 ? (
-        <p className="text-gray-600">Belum ada data kompleks gudang.</p>
+      {/* Tombol aksi */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => {
+            setForm({ warehouse_complex_id: "", name: "", capacity: "" })
+            setEditId(null)
+            setIsModalOpen(true)
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+        >
+          + Tambah Gudang
+        </button>
+        <button
+          onClick={() => {
+            setComplexForm({ name: "", location: "" })
+            setEditComplexId(null)
+            setIsComplexModalOpen(true)
+          }}
+          className="bg-gray-700 text-white px-4 py-2 rounded shadow hover:bg-gray-800"
+        >
+          + Tambah Kompleks
+        </button>
+      </div>
+
+      {/* Daftar kompleks */}
+      {filteredComplexes.length === 0 ? (
+        <p className="text-gray-500">Belum ada kompleks gudang.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {complexes.map((complex, index) => {
-            const color = accentColors[index % accentColors.length]
-            const Icon = icons[index % icons.length]
+          {filteredComplexes.map((complex) => {
             const complexWarehouses = warehouses.filter(
               (w) => w.warehouse_complex_id === complex.id
             )
 
             return (
-              <div
-                key={complex.id}
-                className={`border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all bg-white`}
-              >
+              <div key={complex.id} className="border border-gray-200 rounded-xl p-5 bg-white shadow-sm">
                 {/* Header kompleks */}
-                <div className={`flex items-center gap-3 mb-4 p-2 rounded-lg ${color}`}>
-                  <Icon className="w-5 h-5" />
-                  <h2 className="text-lg font-bold">{complex.name}</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <Warehouse className="w-5 h-5 text-gray-700" />
+                    <div>
+                      <h2 className="font-bold text-gray-800">{complex.name}</h2>
+                      <p className="text-sm text-gray-500">{complex.location}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setComplexForm({
+                          name: complex.name,
+                          location: complex.location,
+                        })
+                        setEditComplexId(complex.id)
+                        setIsComplexModalOpen(true)
+                      }}
+                      className="text-yellow-600 hover:underline text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleComplexDelete(complex.id)}
+                      className="text-red-600 hover:underline text-sm"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
 
-                {/* Isi daftar gudang */}
+                {/* Daftar gudang */}
                 {complexWarehouses.length === 0 ? (
-                  <p className="text-gray-500 text-sm italic">
-                    Belum ada gudang di kompleks ini.
-                  </p>
+                  <p className="text-sm text-gray-500 italic">Belum ada gudang di kompleks ini.</p>
                 ) : (
-                  <ul className="space-y-2">
-                    {complexWarehouses.map((w) => (
-                      <li
-                        key={w.id}
-                        className="flex justify-between items-center border p-2 rounded hover:bg-gray-50"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-800">{w.name}</p>
-                          <p className="text-sm text-gray-500">
-                            Kapasitas: {w.capacity}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(w)}
-                            className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(w.id)}
-                            className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm"
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <table className="w-full text-sm border">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border px-2 py-1">Nama</th>
+                        <th className="border px-2 py-1">Kapasitas</th>
+                        <th className="border px-2 py-1">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {complexWarehouses.map((w) => (
+                        <tr key={w.id}>
+                          <td className="border px-2 py-1">{w.name}</td>
+                          <td className="border px-2 py-1">{w.capacity}</td>
+                          <td className="border px-2 py-1 text-center space-x-1">
+                            <button
+                              onClick={() => {
+                                setForm({
+                                  warehouse_complex_id: w.warehouse_complex_id,
+                                  name: w.name,
+                                  capacity: w.capacity,
+                                })
+                                setEditId(w.id)
+                                setIsModalOpen(true)
+                              }}
+                              className="text-yellow-600 hover:underline"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleWarehouseDelete(w.id)}
+                              className="text-red-600 hover:underline"
+                            >
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
             )
@@ -164,67 +214,116 @@ export default function KelolaGudangPage() {
         </div>
       )}
 
-      {/* Modal tambah/edit */}
+      {/* Modal Gudang */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-md w-96">
-            <h2 className="text-lg font-semibold mb-4">
-              {editId ? "Edit Gudang" : "Tambah Gudang"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <select
-                className="border p-2 w-full rounded"
-                value={form.warehouse_complex_id}
-                onChange={(e) =>
-                  setForm({ ...form, warehouse_complex_id: e.target.value })
-                }
-                required
+        <Modal
+          title={editId ? "Edit Gudang" : "Tambah Gudang"}
+          onClose={() => setIsModalOpen(false)}
+        >
+          <form onSubmit={handleWarehouseSubmit} className="space-y-3">
+            <select
+              className="border p-2 w-full rounded"
+              value={form.warehouse_complex_id}
+              onChange={(e) => setForm({ ...form, warehouse_complex_id: e.target.value })}
+              required
+            >
+              <option value="">Pilih Kompleks Gudang</option>
+              {complexes.map((complex) => (
+                <option key={complex.id} value={complex.id}>
+                  {complex.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="text"
+              placeholder="Nama Gudang"
+              className="border p-2 w-full rounded"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+
+            <input
+              type="number"
+              placeholder="Kapasitas"
+              className="border p-2 w-full rounded"
+              value={form.capacity}
+              onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+              required
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 border rounded"
               >
-                <option value="">Pilih Kompleks Gudang</option>
-                {complexes.map((complex) => (
-                  <option key={complex.id} value={complex.id}>
-                    {complex.name}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="Nama Gudang"
-                className="border p-2 w-full rounded"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
-
-              <input
-                type="number"
-                placeholder="Kapasitas"
-                className="border p-2 w-full rounded"
-                value={form.capacity}
-                onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                required
-              />
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Simpan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Simpan
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
+
+      {/* Modal Kompleks */}
+      {isComplexModalOpen && (
+        <Modal
+          title={editComplexId ? "Edit Kompleks Gudang" : "Tambah Kompleks Gudang"}
+          onClose={() => setIsComplexModalOpen(false)}
+        >
+          <form onSubmit={handleComplexSubmit} className="space-y-3">
+            <input
+              type="text"
+              placeholder="Nama Kompleks"
+              className="border p-2 w-full rounded"
+              value={complexForm.name}
+              onChange={(e) => setComplexForm({ ...complexForm, name: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Lokasi"
+              className="border p-2 w-full rounded"
+              value={complexForm.location}
+              onChange={(e) => setComplexForm({ ...complexForm, location: e.target.value })}
+              required
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsComplexModalOpen(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Simpan
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function Modal({ title, children, onClose }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="bg-white p-6 rounded-xl shadow-md w-96">
+        <h2 className="text-lg font-semibold mb-4">{title}</h2>
+        {children}
+      </div>
     </div>
   )
 }
