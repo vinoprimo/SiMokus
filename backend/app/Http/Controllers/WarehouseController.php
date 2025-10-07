@@ -14,13 +14,15 @@ class WarehouseController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'warehouse_complex_id' => 'required|exists:warehouse_complexes,id',
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'capacity' => 'required|integer',
         ]);
 
-        return Warehouse::create($request->all());
+        $warehouse = Warehouse::create($validated);
+
+        return response()->json($warehouse->load(['complex']), 201);
     }
 
     public function show(Warehouse $warehouse)
@@ -30,13 +32,20 @@ class WarehouseController extends Controller
 
     public function update(Request $request, Warehouse $warehouse)
     {
-        $warehouse->update($request->all());
-        return $warehouse;
+        $validated = $request->validate([
+            'warehouse_complex_id' => 'required|exists:warehouse_complexes,id',
+            'name' => 'required|string|max:255',
+            'capacity' => 'required|integer',
+        ]);
+
+        $warehouse->update($validated);
+
+        return response()->json($warehouse->load(['complex']));
     }
 
     public function destroy(Warehouse $warehouse)
     {
         $warehouse->delete();
-        return response()->noContent();
+        return response()->json(['message' => 'Warehouse deleted successfully']);
     }
 }
