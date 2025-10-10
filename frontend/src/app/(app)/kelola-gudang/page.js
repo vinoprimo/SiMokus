@@ -80,10 +80,34 @@ export default function KelolaGudangPage() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Kelola Gudang</h1>
+      <h1 className="text-xl font-bold mb-4">Kelola Gudang</h1>
 
-        {/* Search */}
+      {/* Tombol aksi + search bar */}
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setForm({ warehouse_complex_id: "", name: "", capacity: "" })
+              setEditId(null)
+              setIsModalOpen(true)
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+          >
+            + Tambah Gudang
+          </button>
+          <button
+            onClick={() => {
+              setComplexForm({ name: "", location: "" })
+              setEditComplexId(null)
+              setIsComplexModalOpen(true)
+            }}
+            className="bg-gray-700 text-white px-4 py-2 rounded shadow hover:bg-gray-800"
+          >
+            + Tambah Kompleks
+          </button>
+        </div>
+
+        {/* Search di kanan */}
         <div className="flex items-center border rounded-lg px-3 py-1 bg-white">
           <Search className="w-4 h-4 text-gray-500 mr-2" />
           <input
@@ -91,33 +115,9 @@ export default function KelolaGudangPage() {
             placeholder="Cari kompleks atau gudang..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="outline-none text-sm w-48"
+            className="outline-none text-sm w-56"
           />
         </div>
-      </div>
-
-      {/* Tombol aksi */}
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => {
-            setForm({ warehouse_complex_id: "", name: "", capacity: "" })
-            setEditId(null)
-            setIsModalOpen(true)
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
-        >
-          + Tambah Gudang
-        </button>
-        <button
-          onClick={() => {
-            setComplexForm({ name: "", location: "" })
-            setEditComplexId(null)
-            setIsComplexModalOpen(true)
-          }}
-          className="bg-gray-700 text-white px-4 py-2 rounded shadow hover:bg-gray-800"
-        >
-          + Tambah Kompleks
-        </button>
       </div>
 
       {/* Daftar kompleks */}
@@ -216,10 +216,7 @@ export default function KelolaGudangPage() {
 
       {/* Modal Gudang */}
       {isModalOpen && (
-        <Modal
-          title={editId ? "Edit Gudang" : "Tambah Gudang"}
-          onClose={() => setIsModalOpen(false)}
-        >
+        <Modal title={editId ? "Edit Gudang" : "Tambah Gudang"} onClose={() => setIsModalOpen(false)}>
           <form onSubmit={handleWarehouseSubmit} className="space-y-3">
             <select
               className="border p-2 w-full rounded"
@@ -261,10 +258,7 @@ export default function KelolaGudangPage() {
               >
                 Batal
               </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
                 Simpan
               </button>
             </div>
@@ -303,10 +297,7 @@ export default function KelolaGudangPage() {
               >
                 Batal
               </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
                 Simpan
               </button>
             </div>
@@ -317,7 +308,7 @@ export default function KelolaGudangPage() {
   )
 }
 
-function Modal({ title, children, onClose }) {
+function Modal({ title, children }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
       <div className="bg-white p-6 rounded-xl shadow-md w-96">
