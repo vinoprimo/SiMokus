@@ -9,7 +9,8 @@ class Fumigation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['warehouse_id', 'date', 'type', 'notes'];
+    // tambahkan start_date dan end_date agar bisa diisi via create/update
+    protected $fillable = ['warehouse_id', 'date', 'type', 'notes', 'start_date', 'end_date'];
 
     public function warehouse()
     {

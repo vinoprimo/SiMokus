@@ -55,56 +55,65 @@ export default function KelolaAdminPage() {
             setIsEditing(false)
             setShowModal(true)
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           + Tambah Admin
         </button>
       </div>
 
-      {/* Tabel admin */}
-      <table className="w-full border border-gray-200 rounded shadow-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2 border">Nama</th>
-            <th className="p-2 border">Email</th>
-            <th className="p-2 border">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {admins.map((admin) => (
-            <tr key={admin.id} className="text-center">
-              <td className="p-2 border">{admin.name}</td>
-              <td className="p-2 border">{admin.email}</td>
-              <td className="p-2 border space-x-2">
-                <button
-                  onClick={() => handleEdit(admin)}
-                  className="px-3 py-1 bg-yellow-500 text-white rounded"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(admin.id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded"
-                >
-                  Hapus
-                </button>
-              </td>
-            </tr>
-          ))}
-          {admins.length === 0 && (
-            <tr>
-              <td colSpan="3" className="p-4 text-gray-500">
-                Belum ada admin
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* Card daftar admin */}
+      <div className="mt-4 bg-white rounded-xl shadow-md">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">Daftar Admin</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="border px-3 py-2 text-left">Nama</th>
+                <th className="border px-3 py-2 text-left">Email</th>
+                <th className="border px-3 py-2 text-left">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {admins.map((admin) => (
+                <tr key={admin.id} className="align-top">
+                  <td className="border px-3 py-2">{admin.name}</td>
+                  <td className="border px-3 py-2">{admin.email}</td>
+                  <td className="border px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEdit(admin)}
+                        className="px-3 py-1 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(admin.id)}
+                        className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {admins.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="border px-3 py-4 text-center text-gray-500">
+                    Belum ada admin
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-96 relative">
+          <div className="bg-white p-6 rounded-xl shadow-md w-96 relative">
             <h2 className="text-lg font-bold mb-4">
               {isEditing ? "Edit Admin" : "Tambah Admin"}
             </h2>
@@ -112,7 +121,7 @@ export default function KelolaAdminPage() {
               <input
                 type="text"
                 placeholder="Nama"
-                className="border p-2 w-full"
+                className="border p-2 w-full rounded"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
@@ -120,7 +129,7 @@ export default function KelolaAdminPage() {
               <input
                 type="email"
                 placeholder="Email"
-                className="border p-2 w-full"
+                className="border p-2 w-full rounded"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
@@ -129,18 +138,16 @@ export default function KelolaAdminPage() {
                 <input
                   type="password"
                   placeholder="Password"
-                  className="border p-2 w-full"
+                  className="border p-2 w-full rounded"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   minLength={6}
-                  required={!isEditing} // edit bisa kosong
+                  required={!isEditing}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  * Minimal 6 karakter
-                </p>
+                <p className="text-xs text-gray-500 mt-1">* Minimal 6 karakter</p>
               </div>
 
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -150,7 +157,7 @@ export default function KelolaAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   {isEditing ? "Simpan" : "Tambah"}
                 </button>

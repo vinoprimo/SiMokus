@@ -17,11 +17,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------- WAREHOUSE COMPLEX ----------
     Route::apiResource('warehouse-complexes', WarehouseComplexController::class);
 
+    // ---------- FUMIGATION / QUALITY ----------
+    // Daftarkan route spesifik dulu agar tidak ditangkap oleh {fumigation}
+    Route::get('/fumigations/active', [FumigationController::class, 'active']);
+    Route::apiResource('fumigations', FumigationController::class);
+
     // ---------- WAREHOUSE ----------
     Route::apiResource('warehouses', WarehouseController::class);
-
-    // ---------- FUMIGATION / QUALITY ----------
-    Route::apiResource('fumigations', FumigationController::class);
 
     // ---------- SPACE / CAPACITY ----------
     Route::apiResource('spaces', SpaceController::class);
@@ -29,4 +31,3 @@ Route::middleware('auth:sanctum')->group(function () {
     // CRUD Admin
     Route::apiResource('admins', AdminController::class);
 });
-

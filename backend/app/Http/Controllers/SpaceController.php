@@ -9,7 +9,13 @@ class SpaceController extends Controller
 {
     public function index()
     {
-        return Space::with('warehouse')->get();
+        return Space::with([
+            'warehouse:id,warehouse_complex_id,name,capacity',
+            'warehouse.complex:id,name'
+        ])
+        ->orderByDesc('date')
+        ->orderByDesc('id')
+        ->get();
     }
 
     public function store(Request $request)

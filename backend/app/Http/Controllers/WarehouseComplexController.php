@@ -7,10 +7,19 @@ use Illuminate\Http\Request;
 
 class WarehouseComplexController extends Controller
 {
-    public function index()
-    {
-        return WarehouseComplex::with('warehouses')->get();
+    public function index(Request $request)
+{
+    $query = WarehouseComplex::query();
+
+    if ($request->has('with')) {
+        $relations = explode(',', $request->get('with'));
+        $query->with($relations);
     }
+
+    return $query->get();
+}
+
+
 
     public function store(Request $request)
     {
