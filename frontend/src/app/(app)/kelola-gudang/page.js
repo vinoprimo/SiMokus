@@ -4,6 +4,9 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { Warehouse, Search } from "lucide-react"
 
+const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+const absUrl = (u) => (!u ? "" : /^https?:\/\//i.test(u) ? u : `${baseUrl}${u.startsWith("/") ? "" : "/"}${u}`)
+
 export default function KelolaGudangPage() {
   const [warehouses, setWarehouses] = useState([])
   const [complexes, setComplexes] = useState([])
@@ -12,12 +15,16 @@ export default function KelolaGudangPage() {
     name: "",
     capacity: "",
   })
-  const [complexForm, setComplexForm] = useState({ name: "", location: "" })
+  const [complexForm, setComplexForm] = useState({ name: "", location: "", layout_image: null })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isComplexModalOpen, setIsComplexModalOpen] = useState(false)
   const [editId, setEditId] = useState(null)
   const [editComplexId, setEditComplexId] = useState(null)
   const [search, setSearch] = useState("")
+  const [previewLayout, setPreviewLayout] = useState(null)
+  const currentEditLayoutUrl = editComplexId
+    ? absUrl(complexes.find((c) => c.id === editComplexId)?.layout_image_url)
+    : null
 
   useEffect(() => {
     fetchData()
@@ -47,17 +54,29 @@ export default function KelolaGudangPage() {
 
   const handleComplexSubmit = async (e) => {
     e.preventDefault()
-    if (editComplexId) {
-      await axios.put(`http://localhost:8000/api/warehouse-complexes/${editComplexId}`, complexForm, {
-        withCredentials: true,
-      })
-    } else {
-      await axios.post("http://localhost:8000/api/warehouse-complexes", complexForm, { withCredentials: true })
+    const fd = new FormData()
+    fd.append("name", complexForm.name)
+    fd.append("location", complexForm.location)
+    if (complexForm.layout_image instanceof File) fd.append("layout_image", complexForm.layout_image)
+    try {
+      if (editComplexId) {
+        fd.append("_method", "PUT")
+        await axios.post(`http://localhost:8000/api/warehouse-complexes/${editComplexId}`, fd, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+      } else {
+        await axios.post("http://localhost:8000/api/warehouse-complexes", fd, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+      }
+    } finally {
+      setComplexForm({ name: "", location: "", layout_image: null })
+      setEditComplexId(null)
+      setIsComplexModalOpen(false)
+      fetchData()
     }
-    setComplexForm({ name: "", location: "" })
-    setEditComplexId(null)
-    setIsComplexModalOpen(false)
-    fetchData()
   }
 
   const handleWarehouseDelete = async (id) => {
@@ -147,6 +166,7 @@ export default function KelolaGudangPage() {
                         setComplexForm({
                           name: complex.name,
                           location: complex.location,
+                          layout_image: null,
                         })
                         setEditComplexId(complex.id)
                         setIsComplexModalOpen(true)
@@ -155,6 +175,14 @@ export default function KelolaGudangPage() {
                     >
                       Edit
                     </button>
+                    {complex.layout_image_url && (
+                      <button
+                        onClick={() => setPreviewLayout(absUrl(complex.layout_image_url))}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        Denah
+                      </button>
+                    )}
                     <button
                       onClick={() => handleComplexDelete(complex.id)}
                       className="text-red-600 hover:underline text-sm"
@@ -289,6 +317,24 @@ export default function KelolaGudangPage() {
               onChange={(e) => setComplexForm({ ...complexForm, location: e.target.value })}
               required
             />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setComplexForm({ ...complexForm, layout_image: e.target.files?.[0] || null })
+              }
+              className="border p-2 w-full rounded"
+            />
+            {editComplexId && currentEditLayoutUrl && (
+              <div className="text-xs text-gray-500">
+                Denah saat ini:
+                <img
+                  src={currentEditLayoutUrl}
+                  alt="Denah"
+                  className="mt-1 rounded border max-h-40 object-contain"
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -303,6 +349,33 @@ export default function KelolaGudangPage() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {previewLayout && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setPreviewLayout(null)}
+        >
+          <div
+            className="bg-white p-4 rounded-xl shadow-xl max-w-3xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-semibold text-lg">Denah Kompleks</h2>
+              <button
+                className="text-sm px-3 py-1 border rounded"
+                onClick={() => setPreviewLayout(null)}
+              >
+                Tutup
+              </button>
+            </div>
+            <img
+              src={previewLayout}
+              alt="Denah Kompleks"
+              className="w-full max-h-[70vh] object-contain rounded border"
+            />
+          </div>
+        </div>
       )}
     </div>
   )
