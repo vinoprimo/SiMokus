@@ -95,6 +95,15 @@ export default function Dashboard() {
       today <= f.end_date
   )
 
+  // Helper: nama kompleks dari warehouse id
+  const getComplexNameByWarehouseId = (wid) => {
+    const idStr = String(wid ?? "")
+    for (const c of complexes || []) {
+      if ((c.warehouses || []).some((w) => String(w.id) === idStr)) return c.name
+    }
+    return "-"
+  }
+
   // Set ID gudang yang sedang aktif untuk penanda UI
   const sprayingIds = new Set(activeSprayings.map((s) => s.warehouse_id ?? s.warehouse?.id))
   const fumigasiIds = new Set(activeFumigations.map((f) => f.warehouse_id ?? f.warehouse?.id))
@@ -177,17 +186,23 @@ export default function Dashboard() {
             <table className="w-full text-sm border">
               <thead className="bg-gray-100">
                 <tr>
+                 <th className="border px-2 py-1 text-left">Kompleks</th>
                   <th className="border px-2 py-1 text-left">Gudang</th>
                   <th className="border px-2 py-1 text-left">Tanggal</th>
                 </tr>
               </thead>
               <tbody>
-                {activeSprayings.map((s) => (
-                  <tr key={s.id}>
-                    <td className="border px-2 py-1">{s.warehouse?.name}</td>
-                    <td className="border px-2 py-1">{s.date}</td>
-                  </tr>
-                ))}
+                {activeSprayings.map((s) => {
+                 const wid = s.warehouse_id ?? s.warehouse?.id
+                 const complexName = s.warehouse?.complex?.name ?? getComplexNameByWarehouseId(wid)
+                  return (
+                    <tr key={s.id}>
+                     <td className="border px-2 py-1">{complexName}</td>
+                      <td className="border px-2 py-1">{s.warehouse?.name}</td>
+                      <td className="border px-2 py-1">{s.date}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -202,19 +217,25 @@ export default function Dashboard() {
             <table className="w-full text-sm border">
               <thead className="bg-gray-100">
                 <tr>
+                 <th className="border px-2 py-1 text-left">Kompleks</th>
                   <th className="border px-2 py-1 text-left">Gudang</th>
                   <th className="border px-2 py-1 text-left">Tanggal</th>
                 </tr>
               </thead>
               <tbody>
-                {activeFumigations.map((f) => (
-                  <tr key={f.id}>
-                    <td className="border px-2 py-1">{f.warehouse?.name}</td>
-                    <td className="border px-2 py-1">
-                      {f.start_date} - {f.end_date}
-                    </td>
-                  </tr>
-                ))}
+                {activeFumigations.map((f) => {
+                 const wid = f.warehouse_id ?? f.warehouse?.id
+                const complexName = f.warehouse?.complex?.name ?? getComplexNameByWarehouseId(wid)
+                  return (
+                    <tr key={f.id}>
+                     <td className="border px-2 py-1">{complexName}</td>
+                      <td className="border px-2 py-1">{f.warehouse?.name}</td>
+                      <td className="border px-2 py-1">
+                        {f.start_date} - {f.end_date}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
