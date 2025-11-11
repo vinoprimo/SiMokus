@@ -337,7 +337,7 @@ export default function Dashboard() {
                             Spraying terakhir: {getLastFumigationDate(w.id, "spraying")}
                           </p>
                           <p className="text-xs text-gray-700">
-                            Space tersisa: {freeRemaining}/{total} ton
+                            Penyimpanan tersisa: {freeRemaining}/{total} ton
                           </p>
                         </div>
                         <CapacityCircle used={used} total={total} />

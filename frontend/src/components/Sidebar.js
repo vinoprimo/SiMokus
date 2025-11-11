@@ -24,14 +24,14 @@ export default function Sidebar() {
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Kelola Admin", href: "/kelola-admin", icon: Users },
     { label: "Kelola Gudang", href: "/kelola-gudang", icon: Warehouse },
-    { label: "Input Space", href: "/input-space", icon: Box },
+    { label: "Input Penyimpanan", href: "/input-space", icon: Box },
     { label: "Jadwal Fumigasi", href: "/jadwal-fumigasi", icon: Calendar },
     { label: "Jadwal Spraying", href: "/jadwal-spraying", icon: SprayCan },
   ]
   
   const adminMenu = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Input Space", href: "/input-space", icon: Box },
+    { label: "Input Penyimpanan", href: "/input-space", icon: Box },
     { label: "Jadwal Fumigasi", href: "/jadwal-fumigasi", icon: Calendar },
     { label: "Jadwal Spraying", href: "/jadwal-spraying", icon: SprayCan },
   ]
@@ -77,7 +77,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 text-sm">
-        Logged in as: <span className="font-semibold">{user.role}</span>
+        Login sebagai: <span className="font-semibold">{user.role}</span>
       </div>
     </aside>
   )
