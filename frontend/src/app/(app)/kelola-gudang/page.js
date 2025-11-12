@@ -317,14 +317,19 @@ export default function KelolaGudangPage() {
               onChange={(e) => setComplexForm({ ...complexForm, location: e.target.value })}
               required
             />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                setComplexForm({ ...complexForm, layout_image: e.target.files?.[0] || null })
-              }
-              className="border p-2 w-full rounded"
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">
+                Upload gambar denah
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setComplexForm({ ...complexForm, layout_image: e.target.files?.[0] || null })
+                }
+                className="border p-2 w-full rounded"
+              />
+            </div>
             {editComplexId && currentEditLayoutUrl && (
               <div className="text-xs text-gray-500">
                 Denah saat ini:
