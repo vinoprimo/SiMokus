@@ -9,6 +9,7 @@ export default function KelolaAdminPage() {
   const [form, setForm] = useState({ id: null, name: "", email: "", password: "" })
   const [showModal, setShowModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchAdmins()
@@ -18,6 +19,14 @@ export default function KelolaAdminPage() {
     const res = await axios.get("http://localhost:8000/api/admins", { withCredentials: true })
     setAdmins(res.data)
   }
+
+  const filteredAdmins = admins.filter((a) => {
+    const q = search.toLowerCase()
+    return (
+      a.name?.toLowerCase().includes(q) ||
+      a.email?.toLowerCase().includes(q)
+    )
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -47,24 +56,36 @@ export default function KelolaAdminPage() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
         <h1 className="text-xl font-bold">Kelola Admin</h1>
-        <button
-          onClick={() => {
-            setForm({ id: null, name: "", email: "", password: "" })
-            setIsEditing(false)
-            setShowModal(true)
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          + Tambah Admin
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Cari nama / email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border px-3 py-2 rounded text-sm w-56"
+          />
+          <button
+            onClick={() => {
+              setForm({ id: null, name: "", email: "", password: "" })
+              setIsEditing(false)
+              setShowModal(true)
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          >
+            + Tambah Admin
+          </button>
+        </div>
       </div>
 
       {/* Card daftar admin */}
       <div className="mt-4 bg-white rounded-xl shadow-md">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-semibold">Daftar Admin</h2>
+          <span className="text-xs text-gray-500">
+            {filteredAdmins.length}/{admins.length} ditemukan
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -76,7 +97,7 @@ export default function KelolaAdminPage() {
               </tr>
             </thead>
             <tbody>
-              {admins.map((admin) => (
+              {filteredAdmins.map((admin) => (
                 <tr key={admin.id} className="align-top">
                   <td className="border px-3 py-2">{admin.name}</td>
                   <td className="border px-3 py-2">{admin.email}</td>
@@ -98,10 +119,10 @@ export default function KelolaAdminPage() {
                   </td>
                 </tr>
               ))}
-              {admins.length === 0 && (
+              {filteredAdmins.length === 0 && (
                 <tr>
                   <td colSpan="3" className="border px-3 py-4 text-center text-gray-500">
-                    Belum ada admin
+                    {search ? "Tidak ada hasil pencarian" : "Belum ada admin"}
                   </td>
                 </tr>
               )}
