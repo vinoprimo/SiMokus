@@ -200,7 +200,7 @@ export default function KelolaGudangPage() {
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="border px-2 py-1">Nama</th>
-                        <th className="border px-2 py-1">Kapasitas</th>
+                        <th className="border px-2 py-1">Kapasitas (ton)</th>
                         <th className="border px-2 py-1">Aksi</th>
                       </tr>
                     </thead>
@@ -208,7 +208,9 @@ export default function KelolaGudangPage() {
                       {complexWarehouses.map((w) => (
                         <tr key={w.id}>
                           <td className="border px-2 py-1">{w.name}</td>
-                          <td className="border px-2 py-1">{w.capacity}</td>
+                          <td className="border px-2 py-1">
+                            {Number(w.capacity ?? 0).toLocaleString("id-ID")} ton
+                          </td>
                           <td className="border px-2 py-1 text-center space-x-1">
                             <button
                               onClick={() => {
