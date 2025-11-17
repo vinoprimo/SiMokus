@@ -169,14 +169,69 @@ export default function Dashboard() {
     )
   }
 
+  // Derivasi statistik kumulatif
+  const totalComplexCount = complexes.length
+  const allWarehouses = (complexes || []).flatMap((c) => c.warehouses || [])
+  const totalWarehouseCount = allWarehouses.length // jika masih ingin dipakai di tempat lain
+  const totalCapacity = allWarehouses.reduce(
+    (sum, w) => sum + Number(w.capacity || 0),
+    0
+  )
+  const totalFreeRemaining = allWarehouses.reduce(
+    (sum, w) => sum + Number(latestFreeByWarehouse[w.id] ?? 0),
+    0
+  )
+  const sprayingCount = activeSprayings.length
+  const fumigasiCount = activeFumigations.length
+
+  const fmtTon = (v) =>
+    `${Number.isFinite(Number(v)) ? Number(v).toLocaleString("id-ID") : 0}`
+
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">
           {greeting}, Selamat Datang di SiMokus 👋
         </h1>
         <div className="text-lg font-mono">{time.toLocaleTimeString("id-ID")}</div>
+      </div>
+
+      {/* Peta Karesidenan */}
+      <div className="mb-8">
+        <img
+          src="/karesidenan.png"
+          alt="Peta Karesidenan"
+          className="w-full max-h-[560px] object-contain rounded-2xl border shadow-md"
+        />
+      </div>
+
+      {/* Rekap Kumulatif */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <p className="text-xs text-gray-500">Total Kompleks Gudang</p>
+          <p className="text-2xl font-semibold">{totalComplexCount}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <p className="text-xs text-gray-500">Total Kapasitas Tersisa</p>
+          <p className="text-lg font-medium">
+            {fmtTon(totalFreeRemaining)}/{fmtTon(totalCapacity)} ton
+          </p>
+          <p className="text-xs text-gray-500">
+            {(totalCapacity > 0
+              ? Math.round((totalFreeRemaining / totalCapacity) * 100)
+              : 0)
+            }% terpakai
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <p className="text-xs text-gray-500">Gudang Sedang Spraying</p>
+          <p className="text-2xl font-semibold">{sprayingCount}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-md p-4">
+          <p className="text-xs text-gray-500">Gudang Sedang Fumigasi</p>
+          <p className="text-2xl font-semibold">{fumigasiCount}</p>
+        </div>
       </div>
 
       {/* Rekap Spraying & Fumigasi */}
