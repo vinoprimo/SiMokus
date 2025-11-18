@@ -199,11 +199,11 @@ export default function Dashboard() {
         </div>
 
         {/* Peta Karesidenan */}
-        <div className="mb-8">
+        <div className="mb-8 rounded-2xl bg-white border shadow-md p-4">
           <img
             src="/karesidenan.png"
             alt="Peta Karesidenan"
-            className="w-full max-h-[460px] object-contain rounded-2xl border shadow-md"
+            className="w-full max-h-[460px] object-contain rounded-xl"
           />
         </div>
 
