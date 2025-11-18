@@ -202,7 +202,7 @@ export default function Dashboard() {
         <img
           src="/karesidenan.png"
           alt="Peta Karesidenan"
-          className="w-full max-h-[560px] object-contain rounded-2xl border shadow-md"
+          className="w-full max-h-[460px] object-contain rounded-2xl border shadow-md"
         />
       </div>
 
