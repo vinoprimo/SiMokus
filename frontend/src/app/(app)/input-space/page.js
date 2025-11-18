@@ -26,6 +26,7 @@ export default function SpacesPage() {
   const [filterWarehouseId, setFilterWarehouseId] = useState("")
   const [filterStart, setFilterStart] = useState("")
   const [filterEnd, setFilterEnd] = useState("")
+  const [showChart, setShowChart] = useState(false)
 
   // Formatter angka + satuan ton
   const fmtTon = (val) =>
@@ -132,6 +133,83 @@ export default function SpacesPage() {
       return true
     })
   }, [spaces, filterComplexId, filterWarehouseId, filterStart, filterEnd])
+
+  // Toggle dapat dipakai bila kompleks & gudang sudah dipilih
+  const canShowChart = !!(filterComplexId && filterWarehouseId)
+
+  // Data untuk grafik: urutkan berdasarkan tanggal
+  const chartPoints = useMemo(() => {
+    if (!canShowChart) return []
+    const items = [...filteredSpaces]
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((s) => ({ date: s.date, value: Number(s.free_space || 0) }))
+    return items
+  }, [filteredSpaces, canShowChart])
+
+  // Komponen kecil untuk grafik SVG responsif
+  const SpaceLineChart = ({ points = [] }) => {
+    if (!points.length) return null
+    const W = 820, H = 300
+    const m = { top: 20, right: 16, bottom: 36, left: 56 }
+    const iw = W - m.left - m.right
+    const ih = H - m.top - m.bottom
+    const values = points.map((p) => p.value)
+    const minY = Math.min(0, ...values)
+    const maxY = Math.max(10, ...values)
+    const spanY = maxY - minY || 1
+    const xAt = (i) => m.left + (iw * (points.length === 1 ? 0 : i / (points.length - 1)))
+    const yAt = (v) => m.top + (maxY - v) * (ih / spanY)
+    const pathD = points
+      .map((p, i) => `${i ? "L" : "M"} ${xAt(i)} ${yAt(p.value)}`)
+      .join(" ")
+    const areaD = `${pathD} L ${xAt(points.length - 1)} ${m.top + ih} L ${xAt(0)} ${m.top + ih} Z`
+    const tickCount = 4
+    const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => minY + (spanY * i) / tickCount)
+    const fmtDate = (d) =>
+      new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+    const xLabelStep = Math.max(1, Math.floor(Math.max(1, points.length - 1) / 5))
+
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[300px]">
+        <defs>
+          <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {/* Grid horizontal + sumbu Y */}
+        {yTicks.map((t, i) => {
+          const y = yAt(t)
+          return (
+            <g key={i}>
+              <line x1={m.left} x2={m.left + iw} y1={y} y2={y} stroke="#e5e7eb" />
+              <text x={m.left - 8} y={y} textAnchor="end" dominantBaseline="middle" fill="#6b7280" fontSize="11">
+                {t.toLocaleString("id-ID")}
+              </text>
+            </g>
+          )
+        })}
+        {/* Sumbu X */}
+        <line x1={m.left} x2={m.left + iw} y1={m.top + ih} y2={m.top + ih} stroke="#e5e7eb" />
+        {points.map((p, i) => {
+          if (i % xLabelStep !== 0 && i !== points.length - 1) return null
+          const x = xAt(i)
+          return (
+            <text key={i} x={x} y={m.top + ih + 18} textAnchor="middle" fill="#6b7280" fontSize="11">
+              {fmtDate(p.date)}
+            </text>
+          )
+        })}
+        {/* Area + garis */}
+        <path d={areaD} fill="url(#areaFill)" />
+        <path d={pathD} fill="none" stroke="#4f46e5" strokeWidth="2.5" />
+        {/* Titik */}
+        {points.map((p, i) => (
+          <circle key={i} cx={xAt(i)} cy={yAt(p.value)} r="3.5" fill="#4f46e5" />
+        ))}
+      </svg>
+    )
+  }
 
   const submit = async (e) => {
     e?.preventDefault()
@@ -353,19 +431,50 @@ export default function SpacesPage() {
             />
           </div>
 
-          <button
-            type="button"
-            className="ml-auto px-3 py-2 border rounded-lg"
-            onClick={() => {
-              setFilterComplexId("")
-              setFilterWarehouseId("")
-              setFilterStart("")
-              setFilterEnd("")
-            }}
-          >
-            Reset
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-2 border rounded-lg"
+              onClick={() => {
+                setFilterComplexId("")
+                setFilterWarehouseId("")
+                setFilterStart("")
+                setFilterEnd("")
+              }}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowChart((v) => !v)}
+              disabled={!canShowChart}
+              className="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={canShowChart ? "Tampilkan grafik" : "Pilih Kompleks dan Gudang dahulu"}
+            >
+              {showChart ? "Sembunyikan Grafik" : "Lihat Grafik"}
+            </button>
+          </div>
         </div>
+
+        {/* GRAFIK */}
+        {showChart && canShowChart && (
+          <div className="px-4 pb-4">
+            <div className="rounded-xl border bg-white shadow-sm">
+              <div className="p-3 flex items-center justify-between text-sm text-gray-500 border-b">
+                <span>
+                  Grafik ruang penyimpanan (ton)
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  Real-time
+                </span>
+              </div>
+              <div className="p-3">
+                <SpaceLineChart points={chartPoints} />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
