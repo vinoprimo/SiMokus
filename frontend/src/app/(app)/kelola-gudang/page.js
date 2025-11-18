@@ -98,7 +98,7 @@ export default function KelolaGudangPage() {
   )
 
   return (
-    <div className="p-6">
+    <div className="pl-24 pr-12 py-6">
       <h1 className="text-xl font-bold mb-4">Kelola Gudang</h1>
 
       {/* Tombol aksi + search bar */}

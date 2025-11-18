@@ -55,7 +55,7 @@ export default function KelolaAdminPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="pl-24 pr-12 py-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
         <h1 className="text-xl font-bold">Kelola Admin</h1>
         <div className="flex items-center gap-2">
