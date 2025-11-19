@@ -30,26 +30,61 @@ export default function KelolaGudangPage() {
     fetchData()
   }, [])
 
+  const ensureCsrf = async () => {
+    await axios.get(`${baseUrl}/sanctum/csrf-cookie`, {
+      withCredentials: true,
+      headers: { Accept: "application/json" },
+    })
+  }
+
   const fetchData = async () => {
-    const [wareRes, complexRes] = await Promise.all([
-      axios.get("http://localhost:8000/api/warehouses", { withCredentials: true }),
-      axios.get("http://localhost:8000/api/warehouse-complexes", { withCredentials: true }),
-    ])
-    setWarehouses(wareRes.data)
-    setComplexes(complexRes.data)
+    try {
+      const [wareRes, complexRes] = await Promise.all([
+        axios.get(`${baseUrl}/api/warehouses`, {
+          withCredentials: true,
+          headers: { Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        }),
+        axios.get(`${baseUrl}/api/warehouse-complexes`, {
+          withCredentials: true,
+          headers: { Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        }),
+      ])
+      setWarehouses(wareRes.data)
+      setComplexes(complexRes.data)
+    } catch (e) {
+      console.error("Gagal memuat data gudang:", e)
+    }
   }
 
   const handleWarehouseSubmit = async (e) => {
     e.preventDefault()
-    if (editId) {
-      await axios.put(`http://localhost:8000/api/warehouses/${editId}`, form, { withCredentials: true })
-    } else {
-      await axios.post("http://localhost:8000/api/warehouses", form, { withCredentials: true })
+    try {
+      await ensureCsrf()
+      if (editId) {
+        await axios.put(`${baseUrl}/api/warehouses/${editId}`, form, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        })
+      } else {
+        await axios.post(`${baseUrl}/api/warehouses`, form, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        })
+      }
+    } finally {
+      setForm({ warehouse_complex_id: "", name: "", capacity: "" })
+      setEditId(null)
+      setIsModalOpen(false)
+      fetchData()
     }
-    setForm({ warehouse_complex_id: "", name: "", capacity: "" })
-    setEditId(null)
-    setIsModalOpen(false)
-    fetchData()
   }
 
   const handleComplexSubmit = async (e) => {
@@ -59,16 +94,21 @@ export default function KelolaGudangPage() {
     fd.append("location", complexForm.location)
     if (complexForm.layout_image instanceof File) fd.append("layout_image", complexForm.layout_image)
     try {
+      await ensureCsrf()
       if (editComplexId) {
         fd.append("_method", "PUT")
-        await axios.post(`http://localhost:8000/api/warehouse-complexes/${editComplexId}`, fd, {
+        await axios.post(`${baseUrl}/api/warehouse-complexes/${editComplexId}`, fd, {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { "Content-Type": "multipart/form-data", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
         })
       } else {
-        await axios.post("http://localhost:8000/api/warehouse-complexes", fd, {
+        await axios.post(`${baseUrl}/api/warehouse-complexes`, fd, {
           withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { "Content-Type": "multipart/form-data", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
         })
       }
     } finally {
@@ -81,14 +121,26 @@ export default function KelolaGudangPage() {
 
   const handleWarehouseDelete = async (id) => {
     if (confirm("Yakin ingin menghapus gudang ini?")) {
-      await axios.delete(`http://localhost:8000/api/warehouses/${id}`, { withCredentials: true })
+      await ensureCsrf()
+      await axios.delete(`${baseUrl}/api/warehouses/${id}`, {
+        withCredentials: true,
+        headers: { Accept: "application/json" },
+        xsrfCookieName: "XSRF-TOKEN",
+        xsrfHeaderName: "X-XSRF-TOKEN",
+      })
       fetchData()
     }
   }
 
   const handleComplexDelete = async (id) => {
     if (confirm("Yakin ingin menghapus kompleks gudang ini?")) {
-      await axios.delete(`http://localhost:8000/api/warehouse-complexes/${id}`, { withCredentials: true })
+      await ensureCsrf()
+      await axios.delete(`${baseUrl}/api/warehouse-complexes/${id}`, {
+        withCredentials: true,
+        headers: { Accept: "application/json" },
+        xsrfCookieName: "XSRF-TOKEN",
+        xsrfHeaderName: "X-XSRF-TOKEN",
+      })
       fetchData()
     }
   }
@@ -326,9 +378,25 @@ export default function KelolaGudangPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) =>
-                  setComplexForm({ ...complexForm, layout_image: e.target.files?.[0] || null })
-                }
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null
+                  if (!f) {
+                    setComplexForm({ ...complexForm, layout_image: null })
+                    return
+                  }
+                  const MAX_IMG_SIZE = 5 * 1024 * 1024 // 5MB
+                  if (!f.type.startsWith("image/")) {
+                    alert("File harus berupa gambar.")
+                    e.target.value = ""
+                    return
+                  }
+                  if (f.size > MAX_IMG_SIZE) {
+                    alert("Ukuran gambar maksimal 5MB.")
+                    e.target.value = ""
+                    return
+                  }
+                  setComplexForm({ ...complexForm, layout_image: f })
+                }}
                 className="border p-2 w-full rounded"
               />
             </div>

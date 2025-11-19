@@ -11,13 +11,32 @@ export default function KelolaAdminPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [search, setSearch] = useState("")
 
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+
+  const ensureCsrf = async () => {
+    await axios.get(`${baseUrl}/sanctum/csrf-cookie`, {
+      withCredentials: true,
+      headers: { Accept: "application/json" },
+    })
+  }
+
   useEffect(() => {
     fetchAdmins()
   }, [])
 
   const fetchAdmins = async () => {
-    const res = await axios.get("http://localhost:8000/api/admins", { withCredentials: true })
-    setAdmins(res.data)
+    try {
+      const res = await axios.get(`${baseUrl}/api/admins`, {
+        withCredentials: true,
+        headers: { Accept: "application/json" },
+        xsrfCookieName: "XSRF-TOKEN",
+        xsrfHeaderName: "X-XSRF-TOKEN",
+      })
+      setAdmins(res.data)
+    } catch (e) {
+      console.error("Gagal memuat admin:", e)
+      setAdmins([])
+    }
   }
 
   const filteredAdmins = admins.filter((a) => {
@@ -30,22 +49,44 @@ export default function KelolaAdminPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (isEditing) {
-      await axios.put(`http://localhost:8000/api/admins/${form.id}`, form, { withCredentials: true })
-    } else {
-      await axios.post("http://localhost:8000/api/admins", form, { withCredentials: true })
+    try {
+      await ensureCsrf()
+      if (isEditing) {
+        await axios.put(`${baseUrl}/api/admins/${form.id}`, form, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        })
+      } else {
+        await axios.post(`${baseUrl}/api/admins`, form, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          xsrfCookieName: "XSRF-TOKEN",
+          xsrfHeaderName: "X-XSRF-TOKEN",
+        })
+      }
+    } finally {
+      setForm({ id: null, name: "", email: "", password: "" })
+      setIsEditing(false)
+      setShowModal(false)
+      fetchAdmins()
     }
-
-    setForm({ id: null, name: "", email: "", password: "" })
-    setIsEditing(false)
-    setShowModal(false)
-    fetchAdmins()
   }
 
   const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:8000/api/admins/${id}`, { withCredentials: true })
-    fetchAdmins()
+    try {
+      await ensureCsrf()
+      await axios.delete(`${baseUrl}/api/admins/${id}`, {
+        withCredentials: true,
+        headers: { Accept: "application/json" },
+        xsrfCookieName: "XSRF-TOKEN",
+        xsrfHeaderName: "X-XSRF-TOKEN",
+      })
+      fetchAdmins()
+    } catch (e) {
+      console.error("Gagal hapus admin:", e)
+    }
   }
 
   const handleEdit = (admin) => {
