@@ -97,6 +97,117 @@ export default function JadwalSprayingPage() {
     })
   }, [sprayingRows, filterComplexId, filterWarehouseId, filterStart, filterEnd])
 
+  const [showCalendar, setShowCalendar] = useState(false)
+  const canShowCalendar = !!(filterComplexId && filterWarehouseId)
+
+  // Date utils (lokal – hindari shift UTC)
+  const toYmd = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const da = String(d.getDate()).padStart(2, "0")
+    return `${y}-${m}-${da}`
+  }
+  const parseYmd = (s) => {
+    if (!s) return null
+    const [y, m, d] = s.split("-").map(Number)
+    return new Date(y, (m || 1) - 1, d || 1)
+  }
+  const addDays = (d, n = 1) => {
+    const nd = new Date(d)
+    nd.setDate(nd.getDate() + n)
+    return nd
+  }
+
+  const calendarDaysSpray = useMemo(() => {
+    if (!canShowCalendar) return []
+    const rows = filteredSprayingRows
+    if (!rows.length) return []
+    const active = new Set()
+    rows.forEach(r => {
+      const d = parseYmd(r.date)
+      if (d) active.add(toYmd(d))
+    })
+    const allDates = [...active].map(k => parseYmd(k))
+    const minD = filterStart ? parseYmd(filterStart) : new Date(Math.min(...allDates.map(d => d.getTime())))
+    const maxD = filterEnd ? parseYmd(filterEnd) : new Date(Math.max(...allDates.map(d => d.getTime())))
+    const days = []
+    for (let d = new Date(minD); d <= maxD; d = addDays(d, 1)) {
+      const key = toYmd(d)
+      days.push({ date: new Date(d), key, count: active.has(key) ? 1 : 0 })
+    }
+    return days
+  }, [filteredSprayingRows, filterStart, filterEnd, canShowCalendar])
+
+  const CalendarHeatmap = ({ days }) => {
+    if (!days.length) return <p className="px-4 pb-4 text-sm text-gray-500">Tidak ada data pada rentang ini.</p>
+    const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
+    const first = days[0].date
+    const last = days[days.length - 1].date
+    const startMonth = new Date(first.getFullYear(), first.getMonth(), 1)
+    const endMonth = new Date(last.getFullYear(), last.getMonth(), 1)
+    const activeSet = new Set(days.filter(d => d.count > 0).map(d => d.key))
+    // List months
+    const months = []
+    for (let cur = new Date(startMonth); cur <= endMonth; cur.setMonth(cur.getMonth() + 1)) {
+      months.push({ year: cur.getFullYear(), month: cur.getMonth() })
+    }
+    const byYear = months.reduce((acc, m) => {
+      (acc[m.year] ||= []).push(m)
+      return acc
+    }, {})
+    return (
+      <div className="px-4 pb-4 space-y-6">
+        {Object.keys(byYear).sort((a,b)=>Number(a)-Number(b)).map(year => (
+          <div key={year}>
+            <div className="flex items-center gap-3 py-2">
+              <h3 className="text-sm font-semibold text-gray-700">{year}</h3>
+              <div className="h-px bg-gray-200 flex-1" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {byYear[year].map(({ year: y, month: m }) => {
+                const mStart = new Date(y, m, 1)
+                const mEnd = new Date(y, m + 1, 0)
+                const offset = mStart.getDay()
+                const total = mEnd.getDate()
+                return (
+                  <div key={`${y}-${m}`} className="w-full rounded-lg border bg-white p-2">
+                    <div className="text-xs font-medium text-gray-700 mb-1">
+                      {monthNames[m]} {y}
+                    </div>
+                    <div className="grid grid-cols-7 gap-[4px]">
+                      {["Min","Sen","Sel","Rab","Kam","Jum","Sab"].map(h => (
+                        <div key={h} className="text-[9px] leading-4 text-gray-500 text-center">{h}</div>
+                      ))}
+                      {Array.from({ length: offset }).map((_, i) => (
+                        <div key={`pad-${i}`} className="aspect-square" />
+                      ))}
+                      {Array.from({ length: total }).map((_, idx) => {
+                        const day = idx + 1
+                        const dt = new Date(y, m, day)
+                        const key = toYmd(dt)
+                        const active = activeSet.has(key)
+                        return (
+                          <div
+                            key={key}
+                            title={`${key}${active ? " • Ada jadwal" : ""}`}
+                            className={`aspect-square rounded-md flex items-center justify-center text-[11px] transition
+                              ${active ? "bg-blue-500 text-white shadow-sm hover:bg-blue-600" : "bg-gray-50 text-gray-700 hover:bg-gray-100"}`}
+                          >
+                            {day}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const submit = async (e) => {
     e?.preventDefault()
     if (!warehouseId || !date) {
@@ -308,19 +419,52 @@ export default function JadwalSprayingPage() {
             />
           </div>
 
-          <button
-            type="button"
-            className="ml-auto px-3 py-2 border rounded-lg"
-            onClick={() => {
-              setFilterComplexId("")
-              setFilterWarehouseId("")
-              setFilterStart("")
-              setFilterEnd("")
-            }}
-          >
-            Reset
-          </button>
+          <div className="ml-auto flex items-center gap-4">
+            <button
+              type="button"
+              className="px-3 py-2 border rounded-lg"
+              onClick={() => {
+                setFilterComplexId("")
+                setFilterWarehouseId("")
+                setFilterStart("")
+                setFilterEnd("")
+              }}
+            >
+              Reset
+            </button>
+            <div
+              className="flex items-center gap-2"
+              title={canShowCalendar ? (showCalendar ? "Sembunyikan kalender" : "Tampilkan kalender") : "Pilih Kompleks dan Gudang dahulu"}
+            >
+              <span className="text-sm text-gray-600 select-none">Kalender</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showCalendar}
+                disabled={!canShowCalendar}
+                onClick={() => canShowCalendar && setShowCalendar(v=>!v)}
+                onKeyDown={(e)=>{
+                  if(!canShowCalendar) return
+                  if(e.key===" "||e.key==="Enter"){e.preventDefault();setShowCalendar(v=>!v)}
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition
+                  ${canShowCalendar ? (showCalendar ? "bg-indigo-600" : "bg-gray-300 hover:bg-gray-400") : "bg-gray-300 opacity-60 cursor-not-allowed"}
+                  focus:outline-none focus:ring-2 focus:ring-indigo-300`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition
+                    ${showCalendar ? "translate-x-5" : "translate-x-1"}`}
+                />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {showCalendar && canShowCalendar && (
+          <div className="border-t">
+            <CalendarHeatmap days={calendarDaysSpray} />
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
