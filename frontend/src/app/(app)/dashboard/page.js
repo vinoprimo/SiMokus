@@ -1,4 +1,3 @@
-// filepath: c:\simokus\frontend\src\app\(app)\dashboard\page.js
 "use client"
 
 import { useEffect, useState } from "react"
@@ -14,10 +13,8 @@ export default function Dashboard() {
   const [layoutPreview, setLayoutPreview] = useState(null)
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
-  // Helper untuk membuat URL absolut
   const absUrl = (u) => (!u ? "" : /^https?:\/\//i.test(u) ? u : `${baseUrl}${u.startsWith("/") ? "" : "/"}${u}`)
 
-  // Update jam realtime
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
@@ -29,7 +26,6 @@ export default function Dashboard() {
   else if (hour >= 12 && hour < 15) greeting = "Selamat Siang"
   else if (hour >= 15 && hour < 18) greeting = "Selamat Sore"
 
-  // Fetch data dari Laravel
   useEffect(() => {
     fetchData()
   }, [])
@@ -45,19 +41,16 @@ export default function Dashboard() {
           credentials: "include",
           headers: { Accept: "application/json" },
         }).then((r) => r.json()),
-        // Minta relasi warehouses
         fetch(`${baseUrl}/api/warehouse-complexes?with=warehouses`, {
           credentials: "include",
           headers: { Accept: "application/json" },
         }).then((r) => r.json()),
-        // Ambil riwayat space untuk hitung free_space terbaru per gudang
         fetch(`${baseUrl}/api/spaces`, {
           credentials: "include",
           headers: { Accept: "application/json" },
         }).then((r) => r.json()),
       ])
 
-      // Bangun map free_space terbaru per warehouse
       const latestMap = {}
       if (Array.isArray(spacesRes)) {
         const sorted = [...spacesRes].sort((a, b) => {
@@ -87,7 +80,6 @@ export default function Dashboard() {
 
   const today = new Date().toISOString().split("T")[0]
 
-  // Filter aktif spraying & fumigasi
   const activeSprayings = fumigations.filter(
     (f) => f.type === "spraying" && f.date === today
   )
@@ -100,7 +92,6 @@ export default function Dashboard() {
       today <= f.end_date
   )
 
-  // Helper: nama kompleks dari warehouse id
   const getComplexNameByWarehouseId = (wid) => {
     const idStr = String(wid ?? "")
     for (const c of complexes || []) {
@@ -109,7 +100,6 @@ export default function Dashboard() {
     return "-"
   }
 
-  // Set ID gudang yang sedang aktif untuk penanda UI
   const sprayingIds = new Set(activeSprayings.map((s) => s.warehouse_id ?? s.warehouse?.id))
   const fumigasiIds = new Set(activeFumigations.map((f) => f.warehouse_id ?? f.warehouse?.id))
 
@@ -117,7 +107,6 @@ export default function Dashboard() {
     c.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Helper buat dapetin fumigasi/spraying terakhir
   const getLastFumigationDate = (warehouseId, type) => {
     const records = (fumigationsAll || [])
       .filter((f) => f.warehouse_id === warehouseId && f.type === type)
@@ -130,14 +119,12 @@ export default function Dashboard() {
       : `${record.start_date} - ${record.end_date}`
   }
 
-  // Helper untuk lingkaran kapasitas
   const CapacityCircle = ({ used, total }) => {
     const percentUsed = total > 0 ? Math.round((used / total) * 100) : 0
     const radius = 25
     const circumference = 2 * Math.PI * radius
     const offset = circumference - (percentUsed / 100) * circumference
 
-    // Warna: 0% hijau -> 100% merah (gradasi HSL)
     const hue = Math.max(0, 120 - Math.round(1.2 * percentUsed))
     const color = `hsl(${hue} 85% 45%)`
 
@@ -170,7 +157,6 @@ export default function Dashboard() {
     )
   }
 
-  // Derivasi statistik kumulatif
   const totalComplexCount = complexes.length
   const allWarehouses = (complexes || []).flatMap((c) => c.warehouses || [])
   const totalWarehouseCount = allWarehouses.length
@@ -189,8 +175,8 @@ export default function Dashboard() {
     `${Number.isFinite(Number(v)) ? Number(v).toLocaleString("id-ID") : 0}`
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
           <h1 className="text-lg sm:text-2xl font-bold">
@@ -415,7 +401,6 @@ export default function Dashboard() {
           ) : (
             filteredComplexes.map((complex) => (
               <div key={complex.id} className="bg-white rounded-xl shadow-md p-4 sm:p-5">
-                {/* Header kompleks */}
                 <div className="flex items-start gap-2 mb-3">
                   <Warehouse className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
@@ -432,7 +417,6 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Daftar gudang */}
                 {complex.warehouses && complex.warehouses.length > 0 ? (
                   <div className="space-y-2 sm:space-y-3">
                     {complex.warehouses.map((w) => {
@@ -452,7 +436,6 @@ export default function Dashboard() {
 
                       return (
                         <div key={w.id} className={cardClass}>
-                          {/* Penanda status aktif */}
                           <div className="absolute top-1 right-1 z-10 flex items-center gap-1">
                             {isFumigasi && (
                               <div className="group/tooltip relative">
@@ -526,6 +509,19 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-auto sm:ml-64">
+        <div className="px-4 py-4 sm:px-12">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs sm:text-sm text-gray-600">
+            <p className="text-center sm:text-left">
+              Copyright © 2025 Pengadaan Komoditas<br className="sm:hidden" />
+              <span className="hidden sm:inline"> • </span>Kantor Cabang Surakarta
+            </p>
+            <p className="font-medium text-blue-600">MasbeID</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
