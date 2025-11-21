@@ -120,9 +120,9 @@ export default function KelolaAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Main Content - Responsive padding */}
-      <div className="pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
+      <div className="flex-1 pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
           <h1 className="text-xl sm:text-2xl font-bold">Kelola Admin</h1>
@@ -202,6 +202,19 @@ export default function KelolaAdminPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-auto sm:ml-64">
+        <div className="px-4 py-4 sm:px-12">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs sm:text-sm text-gray-600">
+            <p className="text-center sm:text-left">
+              Copyright © 2025 Pengadaan Komoditas<br className="sm:hidden" />
+              <span className="hidden sm:inline"> • </span>Kantor Cabang Surakarta
+            </p>
+            <p className="font-medium text-blue-600">MasbeID</p>
+          </div>
+        </div>
+      </footer>
 
       {/* Modal */}
       {showModal && (
