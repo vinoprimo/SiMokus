@@ -260,285 +260,296 @@ export default function SpacesPage() {
   }
 
   return (
-    <div className="pl-24 pr-12 py-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Input Space Gudang</h1>
-        <button
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-          onClick={() => setOpen(true)}
-        >
-          Input Space
-        </button>
-      </div>
-
-      {/* Modal */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !loading && setOpen(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Tambah Input Space</h2>
-            {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
-            <form onSubmit={submit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tanggal</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kompleks Pergudangan</label>
-                  <select
-                    value={complexId}
-                    onChange={(e) => {
-                      setComplexId(e.target.value)
-                      setWarehouseId("")
-                    }}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                  >
-                    <option value="">Pilih kompleks</option>
-                    {complexes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Gudang</label>
-                  <select
-                    value={warehouseId}
-                    onChange={(e) => setWarehouseId(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                    disabled={!complexId}
-                  >
-                    <option value="">Pilih gudang</option>
-                    {warehousesInComplex.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedWarehouse && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Kapasitas gudang: {fmtTon(selectedWarehouse.capacity ?? "-")}
-                    </p>
-                  )}
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Ruang Penyimpanan Terpakai</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={freeSpace}
-                    onChange={(e) => setFreeSpace(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                    placeholder="Masukkan nilai ruang penyimpanan terpakai (ton)"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg border"
-                  onClick={() => !loading && setOpen(false)}
-                  disabled={loading}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-                  disabled={loading}
-                >
-                  {loading ? "Menyimpan..." : "Simpan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Riwayat + Filter */}
-      <div className="mt-6 bg-white rounded-xl shadow-md">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold">Riwayat Perubahan Ruang Penyimpanan</h2>
+    <div className="min-h-screen bg-gray-50">
+      <div className="pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold">Input Space Gudang</h1>
+          <button
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition whitespace-nowrap"
+            onClick={() => setOpen(true)}
+          >
+            + Input Space
+          </button>
         </div>
 
-        {/* FILTER BAR */}
-        <div className="p-4 flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Kompleks</label>
-            <select
-              value={filterComplexId}
-              onChange={(e) => {
-                setFilterComplexId(e.target.value)
-                setFilterWarehouseId("")
-              }}
-              className="border rounded-lg px-3 py-2 min-w-[220px]"
-            >
-              <option value="">Semua kompleks</option>
-              {complexes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Modal */}
+        {open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => !loading && setOpen(false)} />
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-4">Tambah Input Space</h2>
+                {error && <div className="mb-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
+                
+                <form onSubmit={submit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kompleks Pergudangan</label>
+                      <select
+                        value={complexId}
+                        onChange={(e) => {
+                          setComplexId(e.target.value)
+                          setWarehouseId("")
+                        }}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Pilih kompleks</option>
+                        {complexes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Gudang</label>
+                      <select
+                        value={warehouseId}
+                        onChange={(e) => setWarehouseId(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        disabled={!complexId}
+                      >
+                        <option value="">Pilih gudang</option>
+                        {warehousesInComplex.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedWarehouse && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Kapasitas gudang: {fmtTon(selectedWarehouse.capacity ?? "-")}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ruang Penyimpanan Terpakai (ton)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={freeSpace}
+                        onChange={(e) => setFreeSpace(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Contoh: 2500"
+                        required
+                      />
+                    </div>
+                  </div>
 
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Gudang</label>
-            <select
-              value={filterWarehouseId}
-              onChange={(e) => setFilterWarehouseId(e.target.value)}
-              className="border rounded-lg px-3 py-2 min-w-[200px]"
-              disabled={!filterComplexId}
-            >
-              <option value="">Semua gudang</option>
-              {filterWarehousesInComplex.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Dari Tanggal</label>
-            <input
-              type="date"
-              value={filterStart}
-              onChange={(e) => setFilterStart(e.target.value)}
-              className="border rounded-lg px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Sampai Tanggal</label>
-            <input
-              type="date"
-              value={filterEnd}
-              onChange={(e) => setFilterEnd(e.target.value)}
-              className="border rounded-lg px-3 py-2"
-            />
-          </div>
-
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              className="px-3 py-2 border rounded-lg"
-              onClick={() => {
-                setFilterComplexId("")
-                setFilterWarehouseId("")
-                setFilterStart("")
-                setFilterEnd("")
-              }}
-            >
-              Reset
-            </button>
-            <div
-              className="flex items-center gap-2"
-              title={canShowChart ? (showChart ? "Sembunyikan grafik" : "Tampilkan grafik") : "Pilih Kompleks dan Gudang dahulu"}
-            >
-              <span className="text-sm text-gray-600 select-none">Grafik</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showChart}
-                aria-label="Toggle grafik"
-                disabled={!canShowChart}
-                tabIndex={canShowChart ? 0 : -1}
-                onKeyDown={(e) => {
-                  if (!canShowChart) return
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    setShowChart((v) => !v)
-                  }
-                }}
-                onClick={() => canShowChart && setShowChart((v) => !v)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition
-                  ${canShowChart
-                    ? (showChart ? "bg-indigo-600" : "bg-gray-300 hover:bg-gray-400")
-                    : "bg-gray-300 opacity-60 cursor-not-allowed" }
-                  focus:outline-none focus:ring-2 focus:ring-indigo-300`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition
-                    ${showChart ? "translate-x-5" : "translate-x-1"}`}
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* GRAFIK */}
-        {showChart && canShowChart && (
-          <div className="px-4 pb-4">
-            <div className="rounded-xl border bg-white shadow-sm">
-              <div className="p-3 flex items-center justify-between text-sm text-gray-500 border-b">
-                <span>
-                  Grafik ruang penyimpanan (ton)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  Real-time
-                </span>
-              </div>
-              <div className="p-3">
-                <SpaceLineChart points={chartPoints} />
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg border hover:bg-gray-50 transition font-medium"
+                      onClick={() => !loading && setOpen(false)}
+                      disabled={loading}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition font-medium"
+                      disabled={loading}
+                    >
+                      {loading ? "Menyimpan..." : "Simpan"}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="border px-3 py-2 text-left">Tanggal</th>
-                <th className="border px-3 py-2 text-left">Kompleks</th>
-                <th className="border px-3 py-2 text-left">Gudang</th>
-                <th className="border px-3 py-2 text-right">Kapasitas</th>
-                <th className="border px-3 py-2 text-right">Ruang Penyimpanan Terpakai</th>
-                <th className="border px-3 py-2 text-right">Delta</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSpaces.length === 0 ? (
-                <tr>
-                  <td className="border px-3 py-3 text-center text-gray-500" colSpan={6}>
-                    Tidak ada data yang cocok
-                  </td>
-                </tr>
-              ) : (
-                filteredSpaces.map((s) => {
-                  const capacity = s.warehouse?.capacity ?? "-"
-                  const complexName = s.warehouse?.complex?.name ?? "-"
-                  const delta = deltaById[s.id] ?? 0
-                  const deltaClass = delta > 0 ? "text-green-600" : delta < 0 ? "text-red-600" : "text-gray-600"
+        {/* Riwayat + Filter */}
+        <div className="mt-6 bg-white rounded-xl shadow-md">
+          <div className="p-4 border-b">
+            <h2 className="text-base sm:text-lg font-semibold">Riwayat Perubahan Ruang Penyimpanan</h2>
+          </div>
 
-                  return (
-                    <tr key={s.id}>
-                      <td className="border px-3 py-2">{s.date}</td>
-                      <td className="border px-3 py-2">{complexName}</td>
-                      <td className="border px-3 py-2">{s.warehouse?.name ?? "-"}</td>
-                      <td className="border px-3 py-2 text-right">{fmtTon(capacity)}</td>
-                      <td className="border px-3 py-2 text-right">{fmtTon(s.free_space)}</td>
-                      <td className={`border px-3 py-2 text-right ${deltaClass}`}>{fmtDelta(delta)}</td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+          {/* FILTER BAR */}
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Kompleks</label>
+                <select
+                  value={filterComplexId}
+                  onChange={(e) => {
+                    setFilterComplexId(e.target.value)
+                    setFilterWarehouseId("")
+                  }}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Semua kompleks</option>
+                  {complexes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Gudang</label>
+                <select
+                  value={filterWarehouseId}
+                  onChange={(e) => setFilterWarehouseId(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!filterComplexId}
+                >
+                  <option value="">Semua gudang</option>
+                  {filterWarehousesInComplex.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Dari Tanggal</label>
+                <input
+                  type="date"
+                  value={filterStart}
+                  onChange={(e) => setFilterStart(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Sampai Tanggal</label>
+                <input
+                  type="date"
+                  value={filterEnd}
+                  onChange={(e) => setFilterEnd(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                onClick={() => {
+                  setFilterComplexId("")
+                  setFilterWarehouseId("")
+                  setFilterStart("")
+                  setFilterEnd("")
+                }}
+              >
+                Reset Filter
+              </button>
+
+              <div
+                className="flex items-center gap-2"
+                title={canShowChart ? (showChart ? "Sembunyikan grafik" : "Tampilkan grafik") : "Pilih Kompleks dan Gudang dahulu"}
+              >
+                <span className="text-sm text-gray-600 select-none">Grafik</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showChart}
+                  aria-label="Toggle grafik"
+                  disabled={!canShowChart}
+                  tabIndex={canShowChart ? 0 : -1}
+                  onKeyDown={(e) => {
+                    if (!canShowChart) return
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      setShowChart((v) => !v)
+                    }
+                  }}
+                  onClick={() => canShowChart && setShowChart((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition
+                    ${canShowChart
+                      ? (showChart ? "bg-indigo-600" : "bg-gray-300 hover:bg-gray-400")
+                      : "bg-gray-300 opacity-60 cursor-not-allowed" }
+                    focus:outline-none focus:ring-2 focus:ring-indigo-300`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition
+                      ${showChart ? "translate-x-5" : "translate-x-1"}`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* GRAFIK */}
+          {showChart && canShowChart && (
+            <div className="px-4 pb-4">
+              <div className="rounded-xl border bg-white shadow-sm">
+                <div className="p-3 flex items-center justify-between text-sm text-gray-500 border-b">
+                  <span>Grafik ruang penyimpanan (ton)</span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    Real-time
+                  </span>
+                </div>
+                <div className="p-3">
+                  <SpaceLineChart points={chartPoints} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-600">Tanggal</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-600">Kompleks</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-600">Gudang</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-600">Kapasitas</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-600">Ruang Terpakai</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-600">Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSpaces.length === 0 ? (
+                  <tr>
+                    <td className="border px-3 py-8 text-center text-gray-500 text-sm" colSpan={6}>
+                      Tidak ada data yang cocok
+                    </td>
+                  </tr>
+                ) : (
+                  filteredSpaces.map((s) => {
+                    const capacity = s.warehouse?.capacity ?? "-"
+                    const complexName = s.warehouse?.complex?.name ?? "-"
+                    const delta = deltaById[s.id] ?? 0
+                    const deltaClass = delta > 0 ? "text-green-600" : delta < 0 ? "text-red-600" : "text-gray-600"
+
+                    return (
+                      <tr key={s.id} className="hover:bg-gray-50 transition">
+                        <td className="border px-3 py-2">{s.date}</td>
+                        <td className="border px-3 py-2">{complexName}</td>
+                        <td className="border px-3 py-2">{s.warehouse?.name ?? "-"}</td>
+                        <td className="border px-3 py-2 text-right">{fmtTon(capacity)}</td>
+                        <td className="border px-3 py-2 text-right">{fmtTon(s.free_space)}</td>
+                        <td className={`border px-3 py-2 text-right font-medium ${deltaClass}`}>{fmtDelta(delta)}</td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
