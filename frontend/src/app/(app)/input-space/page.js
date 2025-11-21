@@ -332,14 +332,14 @@ export default function SpacesPage() {
                   )}
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Ruang Penyimpanan Tersisa</label>
+                  <label className="block text-sm font-medium mb-1">Ruang Penyimpanan Terpakai</label>
                   <input
                     type="number"
                     min={0}
                     value={freeSpace}
                     onChange={(e) => setFreeSpace(e.target.value)}
                     className="w-full border rounded-lg px-3 py-2"
-                    placeholder="Masukkan nilai ruang penyimpanan tersisa (ton)"
+                    placeholder="Masukkan nilai ruang penyimpanan terpakai (ton)"
                     required
                   />
                 </div>
@@ -507,7 +507,7 @@ export default function SpacesPage() {
                 <th className="border px-3 py-2 text-left">Kompleks</th>
                 <th className="border px-3 py-2 text-left">Gudang</th>
                 <th className="border px-3 py-2 text-right">Kapasitas</th>
-                <th className="border px-3 py-2 text-right">Ruang Penyimpanan Tersisa</th>
+                <th className="border px-3 py-2 text-right">Ruang Penyimpanan Terpakai</th>
                 <th className="border px-3 py-2 text-right">Delta</th>
               </tr>
             </thead>

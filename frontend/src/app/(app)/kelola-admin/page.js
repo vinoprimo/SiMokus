@@ -1,8 +1,8 @@
-// src/app/(app)/kelola-admin/page.jsx
 "use client"
 
 import { useState, useEffect } from "react"
 import axios from "axios"
+import { Eye, EyeOff } from "lucide-react" // Install: npm install lucide-react
 
 export default function KelolaAdminPage() {
   const [admins, setAdmins] = useState([])
@@ -10,6 +10,7 @@ export default function KelolaAdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [search, setSearch] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
 
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
@@ -70,6 +71,7 @@ export default function KelolaAdminPage() {
       setForm({ id: null, name: "", email: "", password: "" })
       setIsEditing(false)
       setShowModal(false)
+      setShowPassword(false)
       fetchAdmins()
     }
   }
@@ -90,9 +92,22 @@ export default function KelolaAdminPage() {
   }
 
   const handleEdit = (admin) => {
-    setForm({ id: admin.id, name: admin.name, email: admin.email, password: "" })
+    // Set password dummy untuk ditampilkan (akan diganti jika user input baru)
+    setForm({ 
+      id: admin.id, 
+      name: admin.name, 
+      email: admin.email, 
+      password: "••••••••" // Password placeholder
+    })
     setIsEditing(true)
     setShowModal(true)
+    setShowPassword(false)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setShowPassword(false)
+    setForm({ id: null, name: "", email: "", password: "" })
   }
 
   return (
@@ -111,6 +126,7 @@ export default function KelolaAdminPage() {
             onClick={() => {
               setForm({ id: null, name: "", email: "", password: "" })
               setIsEditing(false)
+              setShowPassword(false)
               setShowModal(true)
             }}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
@@ -197,23 +213,49 @@ export default function KelolaAdminPage() {
                 required
               />
               <div>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  className="border p-2 w-full rounded"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  minLength={6}
-                  required={!isEditing}
-                />
-                <p className="text-xs text-gray-500 mt-1">* Minimal 6 karakter</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isEditing ? "Password (Kosongkan jika tidak ingin mengubah)" : "Password"}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder={isEditing ? "••••••••" : "Password"}
+                    className="border p-2 w-full rounded pr-10"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    onFocus={(e) => {
+                      // Clear placeholder password saat focus
+                      if (isEditing && e.target.value === "••••••••") {
+                        setForm({ ...form, password: "" })
+                      }
+                    }}
+                    minLength={6}
+                    required={!isEditing}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {isEditing 
+                    ? "* Kosongkan jika tidak ingin mengubah password" 
+                    : "* Minimal 6 karakter"}
+                </p>
               </div>
 
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 border rounded hover:bg-gray-50"
                 >
                   Batal
                 </button>

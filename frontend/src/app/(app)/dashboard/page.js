@@ -231,7 +231,7 @@ export default function Dashboard() {
                 <Gauge className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">Total Kapasitas Tersisa</p>
+                <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">Total Kapasitas Terpakai</p>
                 <p className="mt-2 text-sm font-medium">
                   <span className="text-xl font-semibold">{fmtTon(totalFreeRemaining)}</span>
                   <span className="text-gray-400"> / {fmtTon(totalCapacity)} ton</span>
@@ -480,7 +480,7 @@ export default function Dashboard() {
                               Spraying terakhir: {getLastFumigationDate(w.id, "spraying")}
                             </p>
                             <p className="text-xs text-gray-700">
-                              Penyimpanan tersisa: {freeRemaining}/{total} ton
+                              Penyimpanan terpakai: {freeRemaining}/{total} ton
                             </p>
                           </div>
                           <CapacityCircle used={used} total={total} />
