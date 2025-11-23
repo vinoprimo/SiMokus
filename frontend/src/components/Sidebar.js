@@ -22,8 +22,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
 
-  if (!user) return null
-
+  // ✅ Move all hooks BEFORE any conditional returns
   // Close sidebar when route changes
   useEffect(() => {
     setIsOpen(false)
@@ -40,6 +39,9 @@ export default function Sidebar() {
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
+
+  // ✅ NOW it's safe to return early
+  if (!user) return null
 
   const superadminMenu = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
