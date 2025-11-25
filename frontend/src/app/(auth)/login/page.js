@@ -18,7 +18,7 @@ const Login = () => {
         redirectIfAuthenticated: '/dashboard',
     })
 
-    const [email, setEmail] = useState('')
+    const [name, setName] = useState('')
     const [password, setPassword] = useState('')
     const [shouldRemember, setShouldRemember] = useState(false)
     const [errors, setErrors] = useState([])
@@ -36,7 +36,7 @@ const Login = () => {
         event.preventDefault()
 
         login({
-            email,
+            name,
             password,
             remember: shouldRemember,
             setErrors,
@@ -48,21 +48,22 @@ const Login = () => {
         <>
             <AuthSessionStatus className="mb-4" status={status} />
             <form onSubmit={submitForm}>
-                {/* Email Address */}
+                {/* Name */}
                 <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="name">Nama</Label>
 
                     <Input
-                        id="email"
-                        type="email"
-                        value={email}
+                        id="name"
+                        type="text"
+                        value={name}
                         className="block mt-1 w-full"
-                        onChange={event => setEmail(event.target.value)}
+                        onChange={event => setName(event.target.value)}
+                        placeholder="Masukkan nama Anda"
                         required
                         autoFocus
                     />
 
-                    <InputError messages={errors.email} className="mt-2" />
+                    <InputError messages={errors.name} className="mt-2" />
                 </div>
 
                 {/* Password */}
@@ -75,6 +76,7 @@ const Login = () => {
                         value={password}
                         className="block mt-1 w-full"
                         onChange={event => setPassword(event.target.value)}
+                        placeholder="Masukkan password"
                         required
                         autoComplete="current-password"
                     />
@@ -101,7 +103,7 @@ const Login = () => {
                         />
 
                         <span className="ml-2 text-sm text-gray-600">
-                            Remember me
+                            Ingat saya
                         </span>
                     </label>
                 </div>
@@ -110,7 +112,7 @@ const Login = () => {
                     <Link
                         href="/forgot-password"
                         className="underline text-sm text-gray-600 hover:text-gray-900">
-                        Forgot your password?
+                        Lupa password?
                     </Link>
 
                     <Button className="ml-3">Login</Button>

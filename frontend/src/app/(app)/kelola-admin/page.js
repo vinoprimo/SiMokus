@@ -53,7 +53,11 @@ export default function KelolaAdminPage() {
     try {
       await ensureCsrf()
       if (isEditing) {
-        const payload = { name: form.name, email: form.email }
+        const payload = { name: form.name }
+        // Only send email if provided
+        if (form.email) {
+          payload.email = form.email
+        }
         // Only send password if changed
         if (form.password && form.password !== "••••••••") {
           payload.password = form.password
@@ -65,7 +69,13 @@ export default function KelolaAdminPage() {
           xsrfHeaderName: "X-XSRF-TOKEN",
         })
       } else {
-        await axios.post(`${baseUrl}/api/admins`, form, {
+        // For new admin, prepare payload
+        const payload = { name: form.name, password: form.password }
+        // Only include email if provided
+        if (form.email) {
+          payload.email = form.email
+        }
+        await axios.post(`${baseUrl}/api/admins`, payload, {
           withCredentials: true,
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           xsrfCookieName: "XSRF-TOKEN",
@@ -171,7 +181,7 @@ export default function KelolaAdminPage() {
                 {filteredAdmins.map((admin) => (
                   <tr key={admin.id} className="hover:bg-gray-50 transition">
                     <td className="border px-3 py-2">{admin.name}</td>
-                    <td className="border px-3 py-2">{admin.email}</td>
+                    <td className="border px-3 py-2">{admin.email || "-"}</td>
                     <td className="border px-3 py-2">
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <button
@@ -242,7 +252,7 @@ export default function KelolaAdminPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
+                    Email {!isEditing && "(Opsional)"}
                   </label>
                   <input
                     type="email"
@@ -250,8 +260,12 @@ export default function KelolaAdminPage() {
                     className="border p-2.5 w-full rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
                   />
+                  {!isEditing && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      * Opsional, bisa dikosongkan
+                    </p>
+                  )}
                 </div>
 
                 <div>
