@@ -6,6 +6,9 @@ import axios from "axios"
 export default function JadwalSprayingPage() {
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
+  // MODE TOGGLE
+  const [mode, setMode] = useState("adm") // "adm" or "activity"
+
   // Data
   const [complexes, setComplexes] = useState([])
   const [records, setRecords] = useState([])
@@ -29,7 +32,7 @@ export default function JadwalSprayingPage() {
 
   useEffect(() => {
     fetchInitial()
-  }, [])
+  }, [mode]) // Refetch when mode changes
 
   const fetchInitial = async () => {
     try {
@@ -41,7 +44,7 @@ export default function JadwalSprayingPage() {
           xsrfCookieName: "XSRF-TOKEN",
           xsrfHeaderName: "X-XSRF-TOKEN",
         }),
-        axios.get(`${baseUrl}/api/fumigations`, {
+        axios.get(`${baseUrl}/api/fumigations?mode=${mode}`, {
           withCredentials: true,
           headers: { Accept: "application/json" },
           xsrfCookieName: "XSRF-TOKEN",
@@ -215,6 +218,19 @@ export default function JadwalSprayingPage() {
       setError("Kompleks, Gudang, dan Tanggal wajib diisi.")
       return
     }
+
+    // CLIENT-SIDE OVERLAP CHECK (for better UX)
+    const hasOverlap = records.some((r) => {
+      if (r.type !== 'spraying' || r.mode !== mode) return false
+      if (String(r.warehouse_id) !== String(warehouseId)) return false
+      return r.date === date
+    })
+
+    if (hasOverlap) {
+      setError("⚠️ Gudang ini sudah memiliki jadwal spraying pada tanggal tersebut!")
+      return
+    }
+
     setLoading(true)
     setError("")
     try {
@@ -226,6 +242,7 @@ export default function JadwalSprayingPage() {
           type: "spraying",
           date,
           notes: notes || null,
+          mode,
         },
         {
           withCredentials: true,
@@ -239,7 +256,7 @@ export default function JadwalSprayingPage() {
         }
       )
 
-      const fresh = await axios.get(`${baseUrl}/api/fumigations`, {
+      const fresh = await axios.get(`${baseUrl}/api/fumigations?mode=${mode}`, {
         withCredentials: true,
         headers: { Accept: "application/json" },
         xsrfCookieName: "XSRF-TOKEN",
@@ -250,7 +267,12 @@ export default function JadwalSprayingPage() {
       setNotes("")
     } catch (e2) {
       console.error("Gagal simpan jadwal:", e2)
-      setError("Gagal menyimpan jadwal spraying.")
+      // Show backend validation error if exists
+      if (e2.response?.data?.errors?.date) {
+        setError(e2.response.data.errors.date[0])
+      } else {
+        setError("Gagal menyimpan jadwal spraying.")
+      }
     } finally {
       setLoading(false)
     }
@@ -259,15 +281,47 @@ export default function JadwalSprayingPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold">Jadwal Spraying</h1>
-          <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition whitespace-nowrap"
-            onClick={() => setOpen(true)}
-          >
-            + Tambah Jadwal
-          </button>
+        {/* Header with Mode Toggle */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold">Jadwal Spraying</h1>
+            <button
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition whitespace-nowrap"
+              onClick={() => setOpen(true)}
+            >
+              + Tambah Jadwal
+            </button>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border">
+            <span className="text-sm font-medium text-gray-700">Mode Tampilan:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMode("adm")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  mode === "adm"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                By ADM
+              </button>
+              <button
+                onClick={() => setMode("activity")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  mode === "activity"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                By Activity
+              </button>
+            </div>
+            <div className="ml-auto text-xs text-gray-500">
+              {mode === "adm" ? "📊 Data ADM" : "📈 Data Activity"}
+            </div>
+          </div>
         </div>
 
         {/* Modal Tambah Jadwal */}
@@ -276,7 +330,9 @@ export default function JadwalSprayingPage() {
             <div className="absolute inset-0 bg-black/40" onClick={() => !loading && setOpen(false)} />
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4">Tambah Jadwal Spraying</h2>
+                <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                  Tambah Jadwal Spraying ({mode === "adm" ? "ADM" : "Activity"})
+                </h2>
                 {error && <div className="mb-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
                 
                 <form onSubmit={submit} className="space-y-4">
@@ -368,7 +424,9 @@ export default function JadwalSprayingPage() {
         {/* Riwayat + Filter */}
         <div className="mt-6 bg-white rounded-xl shadow-md">
           <div className="p-4 border-b">
-            <h2 className="text-base sm:text-lg font-semibold">Riwayat Spraying</h2>
+            <h2 className="text-base sm:text-lg font-semibold">
+              Riwayat Spraying ({mode === "adm" ? "ADM" : "Activity"})
+            </h2>
           </div>
 
           {/* FILTER BAR */}

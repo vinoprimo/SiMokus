@@ -6,6 +6,9 @@ import axios from "axios"
 export default function SpacesPage() {
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
+  // MODE TOGGLE
+  const [mode, setMode] = useState("adm") // "adm" or "activity"
+
   // Data
   const [complexes, setComplexes] = useState([])
   const [spaces, setSpaces] = useState([])
@@ -21,14 +24,13 @@ export default function SpacesPage() {
   const [warehouseId, setWarehouseId] = useState("")
   const [freeSpace, setFreeSpace] = useState("")
 
-  // FILTERS (untuk tabel riwayat)
+  // FILTERS
   const [filterComplexId, setFilterComplexId] = useState("")
   const [filterWarehouseId, setFilterWarehouseId] = useState("")
   const [filterStart, setFilterStart] = useState("")
   const [filterEnd, setFilterEnd] = useState("")
   const [showChart, setShowChart] = useState(false)
 
-  // Formatter angka + satuan ton
   const fmtTon = (val) =>
     val === null || val === undefined || val === "-" ? "-" : `${Number(val).toLocaleString("id-ID")} ton`
   const fmtDelta = (d) => {
@@ -40,7 +42,7 @@ export default function SpacesPage() {
 
   useEffect(() => {
     fetchInitial()
-  }, [])
+  }, [mode]) // Refetch when mode changes
 
   const fetchInitial = async () => {
     try {
@@ -52,7 +54,7 @@ export default function SpacesPage() {
           xsrfCookieName: "XSRF-TOKEN",
           xsrfHeaderName: "X-XSRF-TOKEN",
         }),
-        axios.get(`${baseUrl}/api/spaces`, {
+        axios.get(`${baseUrl}/api/spaces?mode=${mode}`, {
           withCredentials: true,
           headers: { Accept: "application/json" },
           xsrfCookieName: "XSRF-TOKEN",
@@ -74,21 +76,18 @@ export default function SpacesPage() {
     })
   }
 
-  // List gudang untuk form input
   const warehousesInComplex = useMemo(() => {
     if (!complexId) return []
     const c = complexes.find((x) => String(x.id) === String(complexId))
     return c?.warehouses || []
   }, [complexId, complexes])
 
-  // List gudang untuk filter tabel
   const filterWarehousesInComplex = useMemo(() => {
     if (!filterComplexId) return []
     const c = complexes.find((x) => String(x.id) === String(filterComplexId))
     return c?.warehouses || []
   }, [filterComplexId, complexes])
 
-  // Hitung delta per baris berdasarkan riwayat per gudang (pakai semua data, tidak terfilter)
   const deltaById = useMemo(() => {
     const byId = {}
     const asc = [...spaces].sort((a, b) => {
@@ -114,30 +113,24 @@ export default function SpacesPage() {
     [warehousesInComplex, warehouseId]
   )
 
-  // Data riwayat terfilter untuk tabel
   const filteredSpaces = useMemo(() => {
     return (spaces || []).filter((s) => {
-      // by complex
       if (filterComplexId) {
         const cid = s.warehouse?.complex?.id ?? s.warehouse?.warehouse_complex_id
         if (String(cid) !== String(filterComplexId)) return false
       }
-      // by warehouse
       if (filterWarehouseId) {
         const wid = s.warehouse_id ?? s.warehouse?.id
         if (String(wid) !== String(filterWarehouseId)) return false
       }
-      // by date range
       if (filterStart && new Date(s.date) < new Date(filterStart)) return false
       if (filterEnd && new Date(s.date) > new Date(filterEnd)) return false
       return true
     })
   }, [spaces, filterComplexId, filterWarehouseId, filterStart, filterEnd])
 
-  // Toggle dapat dipakai bila kompleks & gudang sudah dipilih
   const canShowChart = !!(filterComplexId && filterWarehouseId)
 
-  // Data untuk grafik: urutkan berdasarkan tanggal
   const chartPoints = useMemo(() => {
     if (!canShowChart) return []
     const items = [...filteredSpaces]
@@ -146,7 +139,6 @@ export default function SpacesPage() {
     return items
   }, [filteredSpaces, canShowChart])
 
-  // Komponen kecil untuk grafik SVG responsif
   const SpaceLineChart = ({ points = [] }) => {
     if (!points.length) return null
     const W = 820, H = 300
@@ -177,7 +169,6 @@ export default function SpacesPage() {
             <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-        {/* Grid horizontal + sumbu Y */}
         {yTicks.map((t, i) => {
           const y = yAt(t)
           return (
@@ -189,7 +180,6 @@ export default function SpacesPage() {
             </g>
           )
         })}
-        {/* Sumbu X */}
         <line x1={m.left} x2={m.left + iw} y1={m.top + ih} y2={m.top + ih} stroke="#e5e7eb" />
         {points.map((p, i) => {
           if (i % xLabelStep !== 0 && i !== points.length - 1) return null
@@ -200,10 +190,8 @@ export default function SpacesPage() {
             </text>
           )
         })}
-        {/* Area + garis */}
         <path d={areaD} fill="url(#areaFill)" />
         <path d={pathD} fill="none" stroke="#4f46e5" strokeWidth="2.5" />
-        {/* Titik */}
         {points.map((p, i) => (
           <circle key={i} cx={xAt(i)} cy={yAt(p.value)} r="3.5" fill="#4f46e5" />
         ))}
@@ -227,6 +215,7 @@ export default function SpacesPage() {
           warehouse_id: Number(warehouseId),
           date,
           free_space: Number(freeSpace),
+          mode, // Send current mode
         },
         {
           withCredentials: true,
@@ -240,8 +229,7 @@ export default function SpacesPage() {
         }
       )
 
-      // Refresh riwayat
-      const fresh = await axios.get(`${baseUrl}/api/spaces`, {
+      const fresh = await axios.get(`${baseUrl}/api/spaces?mode=${mode}`, {
         withCredentials: true,
         headers: { Accept: "application/json" },
         xsrfCookieName: "XSRF-TOKEN",
@@ -262,15 +250,47 @@ export default function SpacesPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 pt-16 px-4 pb-6 sm:pt-6 sm:pl-80 sm:pr-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold">Input Space Gudang</h1>
-          <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition whitespace-nowrap"
-            onClick={() => setOpen(true)}
-          >
-            + Input Space
-          </button>
+        {/* Header with Mode Toggle */}
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold">Input Space Gudang</h1>
+            <button
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition whitespace-nowrap"
+              onClick={() => setOpen(true)}
+            >
+              + Input Space
+            </button>
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border">
+            <span className="text-sm font-medium text-gray-700">Mode Tampilan:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMode("adm")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  mode === "adm"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                By ADM
+              </button>
+              <button
+                onClick={() => setMode("activity")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  mode === "activity"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                By Activity
+              </button>
+            </div>
+            <div className="ml-auto text-xs text-gray-500">
+              {mode === "adm" ? "📊 Data ADM" : "📈 Data Activity"}
+            </div>
+          </div>
         </div>
 
         {/* Modal */}
@@ -279,7 +299,9 @@ export default function SpacesPage() {
             <div className="absolute inset-0 bg-black/40" onClick={() => !loading && setOpen(false)} />
             <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4">Tambah Input Space</h2>
+                <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                  Tambah Input Space ({mode === "adm" ? "ADM" : "Activity"})
+                </h2>
                 {error && <div className="mb-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
                 
                 <form onSubmit={submit} className="space-y-4">
@@ -379,10 +401,11 @@ export default function SpacesPage() {
         {/* Riwayat + Filter */}
         <div className="mt-6 bg-white rounded-xl shadow-md">
           <div className="p-4 border-b">
-            <h2 className="text-base sm:text-lg font-semibold">Riwayat Perubahan Ruang Penyimpanan</h2>
+            <h2 className="text-base sm:text-lg font-semibold">
+              Riwayat Perubahan ({mode === "adm" ? "ADM" : "Activity"})
+            </h2>
           </div>
 
-          {/* FILTER BAR */}
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
@@ -491,7 +514,6 @@ export default function SpacesPage() {
             </div>
           </div>
 
-          {/* GRAFIK */}
           {showChart && canShowChart && (
             <div className="px-4 pb-4">
               <div className="rounded-xl border bg-white shadow-sm">
