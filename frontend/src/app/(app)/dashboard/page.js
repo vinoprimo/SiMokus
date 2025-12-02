@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Warehouse, Search, AlertCircle, Layers, Gauge, SprayCan, CloudFog } from "lucide-react"
 
 export default function Dashboard() {
@@ -11,6 +11,12 @@ export default function Dashboard() {
   const [search, setSearch] = useState("")
   const [latestFreeByWarehouse, setLatestFreeByWarehouse] = useState({})
   const [layoutPreview, setLayoutPreview] = useState(null)
+  const [allSpaces, setAllSpaces] = useState([])
+  
+  // Range waktu untuk grafik
+  const [chartStartDate, setChartStartDate] = useState("")
+  const [chartEndDate, setChartEndDate] = useState("")
+  
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
 
   const absUrl = (u) => (!u ? "" : /^https?:\/\//i.test(u) ? u : `${baseUrl}${u.startsWith("/") ? "" : "/"}${u}`)
@@ -69,12 +75,14 @@ export default function Dashboard() {
       setFumigationsAll(allRes || [])
       setComplexes(complexRes || [])
       setLatestFreeByWarehouse(latestMap)
+      setAllSpaces(spacesRes || [])
     } catch (e) {
       console.error("Gagal fetch data dashboard:", e)
       setFumigations([])
       setFumigationsAll([])
       setComplexes([])
       setLatestFreeByWarehouse({})
+      setAllSpaces([])
     }
   }
 
@@ -117,6 +125,208 @@ export default function Dashboard() {
     return type === "spraying"
       ? record.date
       : `${record.start_date} - ${record.end_date}`
+  }
+
+  // Grafik Kumulatif dengan Filter
+  const { chartData, totalCapacityAll, dateRange } = useMemo(() => {
+    if (!allSpaces.length || !complexes.length) return { chartData: [], totalCapacityAll: 0, dateRange: { min: "", max: "" } }
+
+    // Hitung total kapasitas
+    const allWarehouses = complexes.flatMap(c => c.warehouses || [])
+    const totalCap = allWarehouses.reduce((sum, w) => sum + Number(w.capacity || 0), 0)
+
+    // Group by date
+    const byDate = {}
+    allSpaces.forEach(s => {
+      const date = s.date
+      if (!byDate[date]) byDate[date] = []
+      byDate[date].push(s)
+    })
+
+    // Calculate cumulative per date
+    const dates = Object.keys(byDate).sort()
+    
+    // Get date range
+    const minDate = dates[0] || ""
+    const maxDate = dates[dates.length - 1] || ""
+
+    // Filter by date range
+    const filteredDates = dates.filter(date => {
+      if (chartStartDate && date < chartStartDate) return false
+      if (chartEndDate && date > chartEndDate) return false
+      return true
+    })
+
+    const points = filteredDates.map(date => {
+      const spacesOnDate = byDate[date]
+      // Ambil latest space per warehouse pada tanggal tersebut
+      const latestPerWarehouse = {}
+      spacesOnDate.forEach(s => {
+        const wid = s.warehouse_id || s.warehouse?.id
+        if (!wid) return
+        if (!latestPerWarehouse[wid] || s.id > latestPerWarehouse[wid].id) {
+          latestPerWarehouse[wid] = s
+        }
+      })
+      
+      const total = Object.values(latestPerWarehouse).reduce((sum, s) => sum + Number(s.free_space || 0), 0)
+      return { date, value: total }
+    })
+
+    return { 
+      chartData: points, 
+      totalCapacityAll: totalCap,
+      dateRange: { min: minDate, max: maxDate }
+    }
+  }, [allSpaces, complexes, chartStartDate, chartEndDate])
+
+  const CumulativeSpaceChart = ({ points = [], maxCapacity = 0 }) => {
+    if (!points.length) return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="h-14 w-14 flex items-center justify-center rounded-xl bg-gray-100 text-gray-400 mb-4">
+          <Gauge className="h-8 w-8" />
+        </div>
+        <p className="text-gray-500 text-sm font-medium">
+          {chartStartDate || chartEndDate 
+            ? "Tidak ada data pada rentang tanggal yang dipilih."
+            : "Belum ada data perubahan space."}
+        </p>
+      </div>
+    )
+
+    const W = 1000, H = 320
+    const m = { top: 20, right: 20, bottom: 50, left: 70 }
+    const iw = W - m.left - m.right
+    const ih = H - m.top - m.bottom
+    
+    const minY = 0
+    const maxY = Math.max(maxCapacity, ...points.map(p => p.value), 10)
+    const spanY = maxY - minY || 1
+    
+    const xAt = (i) => m.left + (iw * (points.length === 1 ? 0.5 : i / (points.length - 1)))
+    const yAt = (v) => m.top + (maxY - v) * (ih / spanY)
+    
+    const pathD = points
+      .map((p, i) => `${i ? "L" : "M"} ${xAt(i)} ${yAt(p.value)}`)
+      .join(" ")
+    const areaD = `${pathD} L ${xAt(points.length - 1)} ${yAt(0)} L ${xAt(0)} ${yAt(0)} Z`
+    
+    const tickCount = 6
+    const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => minY + (spanY * i) / tickCount)
+    
+    const fmtDate = (d) =>
+      new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" })
+    const xLabelStep = Math.max(1, Math.floor(Math.max(1, points.length - 1) / 8))
+
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[320px]">
+        <defs>
+          <linearGradient id="cumulativeFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        
+        {/* Grid lines and Y-axis labels */}
+        {yTicks.map((t, i) => {
+          const y = yAt(t)
+          const isCapacity = Math.abs(t - maxCapacity) < 1
+          return (
+            <g key={i}>
+              <line 
+                x1={m.left} 
+                x2={m.left + iw} 
+                y1={y} 
+                y2={y} 
+                stroke={isCapacity ? "#ef4444" : "#e5e7eb"} 
+                strokeWidth={isCapacity ? "2" : "1"}
+                strokeDasharray={isCapacity ? "5 3" : "none"}
+              />
+              <text 
+                x={m.left - 10} 
+                y={y} 
+                textAnchor="end" 
+                dominantBaseline="middle" 
+                fill={isCapacity ? "#ef4444" : "#6b7280"} 
+                fontSize="12"
+                fontWeight={isCapacity ? "700" : "normal"}
+              >
+                {(t / 1000).toFixed(1)}k
+              </text>
+              {isCapacity && (
+                <text 
+                  x={m.left + iw + 10} 
+                  y={y} 
+                  textAnchor="start" 
+                  dominantBaseline="middle" 
+                  fill="#ef4444" 
+                  fontSize="11"
+                  fontWeight="700"
+                >
+                  Max
+                </text>
+              )}
+            </g>
+          )
+        })}
+        
+        {/* X-axis */}
+        <line x1={m.left} x2={m.left + iw} y1={m.top + ih} y2={m.top + ih} stroke="#9ca3af" strokeWidth="2" />
+        
+        {/* Y-axis */}
+        <line x1={m.left} x2={m.left} y1={m.top} y2={m.top + ih} stroke="#9ca3af" strokeWidth="2" />
+        
+        {/* X-axis labels */}
+        {points.map((p, i) => {
+          if (i % xLabelStep !== 0 && i !== points.length - 1) return null
+          const x = xAt(i)
+          return (
+            <text key={i} x={x} y={m.top + ih + 20} textAnchor="middle" fill="#6b7280" fontSize="11">
+              {fmtDate(p.date)}
+            </text>
+          )
+        })}
+        
+        {/* Area fill */}
+        <path d={areaD} fill="url(#cumulativeFill)" />
+        
+        {/* Line */}
+        <path d={pathD} fill="none" stroke="#6366f1" strokeWidth="3" />
+        
+        {/* Data points */}
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={xAt(i)} cy={yAt(p.value)} r="5" fill="white" stroke="#6366f1" strokeWidth="2.5" />
+            <circle cx={xAt(i)} cy={yAt(p.value)} r="2.5" fill="#6366f1" />
+          </g>
+        ))}
+        
+        {/* Y-axis label */}
+        <text 
+          x={m.left - 50} 
+          y={m.top + ih / 2} 
+          textAnchor="middle" 
+          fill="#6b7280" 
+          fontSize="13"
+          fontWeight="600"
+          transform={`rotate(-90, ${m.left - 50}, ${m.top + ih / 2})`}
+        >
+          Total Ruang Terpakai (ton)
+        </text>
+        
+        {/* X-axis label */}
+        <text 
+          x={m.left + iw / 2} 
+          y={H - 10} 
+          textAnchor="middle" 
+          fill="#6b7280" 
+          fontSize="13"
+          fontWeight="600"
+        >
+          Periode Waktu
+        </text>
+      </svg>
+    )
   }
 
   const CapacityCircle = ({ used, total }) => {
@@ -232,7 +442,7 @@ export default function Dashboard() {
                       />
                     </div>
                     <p className="mt-1 text-[10px] sm:text-xs text-gray-500">
-                      {Math.round((totalFreeRemaining / totalCapacity) * 100)}% tersisa
+                      {Math.round((totalFreeRemaining / totalCapacity) * 100)}% terpakai
                     </p>
                   </div>
                 )}
@@ -264,6 +474,90 @@ export default function Dashboard() {
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] sm:text-xs uppercase tracking-wide text-gray-500 font-medium truncate">Gudang Sedang Fumigasi</p>
                 <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-semibold">{fumigasiCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grafik Kumulatif Perubahan Space dengan Filter */}
+        <div className="mb-6 sm:mb-8 group relative overflow-hidden rounded-xl sm:rounded-2xl bg-white p-4 sm:p-6 shadow-md border border-gray-100">
+          <div className="absolute inset-0 pointer-events-none opacity-[0.3] bg-[radial-gradient(circle_at_1px_1px,#eef2f7_1px,transparent_0)] [background-size:18px_18px]"></div>
+          <div className="relative">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold">Grafik Kumulatif Perubahan Ruang Penyimpanan</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Total kapasitas seluruh gudang: {fmtTon(totalCapacity)} ton
+                </p>
+              </div>
+              <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                Real-time
+              </span>
+            </div>
+
+            {/* Filter Range Tanggal */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter Periode:</span>
+                <div className="flex flex-col sm:flex-row gap-2 flex-1 w-full">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Dari Tanggal</label>
+                    <input
+                      type="date"
+                      value={chartStartDate}
+                      onChange={(e) => setChartStartDate(e.target.value)}
+                      min={dateRange.min}
+                      max={chartEndDate || dateRange.max}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Pilih tanggal mulai"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">Sampai Tanggal</label>
+                    <input
+                      type="date"
+                      value={chartEndDate}
+                      onChange={(e) => setChartEndDate(e.target.value)}
+                      min={chartStartDate || dateRange.min}
+                      max={dateRange.max}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Pilih tanggal akhir"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChartStartDate("")
+                        setChartEndDate("")
+                      }}
+                      className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-100 transition whitespace-nowrap"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {dateRange.min && dateRange.max && (
+                <p className="text-xs text-gray-500 mt-2">
+                  📊 Data tersedia: {new Date(dateRange.min).toLocaleDateString("id-ID")} - {new Date(dateRange.max).toLocaleDateString("id-ID")}
+                  {chartData.length > 0 && ` • Menampilkan ${chartData.length} data point`}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-100 p-3 sm:p-4">
+              <CumulativeSpaceChart points={chartData} maxCapacity={totalCapacityAll} />
+            </div>
+            <div className="mt-3 sm:mt-4 flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
+                <span className="text-gray-600">Total Ruang Terpakai</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-0.5 w-5 border-t-2 border-dashed border-red-500"></div>
+                <span className="text-gray-600">Kapasitas Total</span>
               </div>
             </div>
           </div>

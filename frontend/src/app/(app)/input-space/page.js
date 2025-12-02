@@ -139,28 +139,42 @@ export default function SpacesPage() {
     return items
   }, [filteredSpaces, canShowChart])
 
-  const SpaceLineChart = ({ points = [] }) => {
+  const warehouseCapacity = useMemo(() => {
+    if (!filterWarehouseId) return 0
+    const spaces = filteredSpaces.filter(s => {
+      const wid = s.warehouse_id ?? s.warehouse?.id
+      return String(wid) === String(filterWarehouseId)
+    })
+    return spaces[0]?.warehouse?.capacity || 0
+  }, [filterWarehouseId, filteredSpaces])
+
+  const SpaceLineChart = ({ points = [], maxCapacity = 0 }) => {
     if (!points.length) return null
     const W = 820, H = 300
     const m = { top: 20, right: 16, bottom: 36, left: 56 }
     const iw = W - m.left - m.right
     const ih = H - m.top - m.bottom
-    const values = points.map((p) => p.value)
-    const minY = Math.min(0, ...values)
-    const maxY = Math.max(10, ...values)
+    
+    // Set Y axis from 0 to warehouse capacity
+    const minY = 0
+    const maxY = Math.max(maxCapacity, ...points.map(p => p.value), 10)
     const spanY = maxY - minY || 1
-    const xAt = (i) => m.left + (iw * (points.length === 1 ? 0 : i / (points.length - 1)))
+    
+    const xAt = (i) => m.left + (iw * (points.length === 1 ? 0.5 : i / (points.length - 1)))
     const yAt = (v) => m.top + (maxY - v) * (ih / spanY)
+    
     const pathD = points
       .map((p, i) => `${i ? "L" : "M"} ${xAt(i)} ${yAt(p.value)}`)
       .join(" ")
-    const areaD = `${pathD} L ${xAt(points.length - 1)} ${m.top + ih} L ${xAt(0)} ${m.top + ih} Z`
-    const tickCount = 4
+    const areaD = `${pathD} L ${xAt(points.length - 1)} ${yAt(0)} L ${xAt(0)} ${yAt(0)} Z`
+    
+    const tickCount = 5
     const yTicks = Array.from({ length: tickCount + 1 }, (_, i) => minY + (spanY * i) / tickCount)
+    
     const fmtDate = (d) =>
       new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
     const xLabelStep = Math.max(1, Math.floor(Math.max(1, points.length - 1) / 5))
-
+  
     return (
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[300px]">
         <defs>
@@ -169,18 +183,57 @@ export default function SpacesPage() {
             <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.02" />
           </linearGradient>
         </defs>
+        
+        {/* Grid lines and Y-axis labels */}
         {yTicks.map((t, i) => {
           const y = yAt(t)
+          const isCapacity = Math.abs(t - maxCapacity) < 0.01
           return (
             <g key={i}>
-              <line x1={m.left} x2={m.left + iw} y1={y} y2={y} stroke="#e5e7eb" />
-              <text x={m.left - 8} y={y} textAnchor="end" dominantBaseline="middle" fill="#6b7280" fontSize="11">
-                {t.toLocaleString("id-ID")}
+              <line 
+                x1={m.left} 
+                x2={m.left + iw} 
+                y1={y} 
+                y2={y} 
+                stroke={isCapacity ? "#ef4444" : "#e5e7eb"} 
+                strokeWidth={isCapacity ? "1.5" : "1"}
+                strokeDasharray={isCapacity ? "4 2" : "none"}
+              />
+              <text 
+                x={m.left - 8} 
+                y={y} 
+                textAnchor="end" 
+                dominantBaseline="middle" 
+                fill={isCapacity ? "#ef4444" : "#6b7280"} 
+                fontSize="11"
+                fontWeight={isCapacity ? "600" : "normal"}
+              >
+                {t.toLocaleString("id-ID", { maximumFractionDigits: 0 })}
               </text>
+              {isCapacity && (
+                <text 
+                  x={m.left + iw + 8} 
+                  y={y} 
+                  textAnchor="start" 
+                  dominantBaseline="middle" 
+                  fill="#ef4444" 
+                  fontSize="10"
+                  fontWeight="600"
+                >
+                  Max
+                </text>
+              )}
             </g>
           )
         })}
-        <line x1={m.left} x2={m.left + iw} y1={m.top + ih} y2={m.top + ih} stroke="#e5e7eb" />
+        
+        {/* X-axis */}
+        <line x1={m.left} x2={m.left + iw} y1={m.top + ih} y2={m.top + ih} stroke="#9ca3af" strokeWidth="1.5" />
+        
+        {/* Y-axis */}
+        <line x1={m.left} x2={m.left} y1={m.top} y2={m.top + ih} stroke="#9ca3af" strokeWidth="1.5" />
+        
+        {/* X-axis labels */}
         {points.map((p, i) => {
           if (i % xLabelStep !== 0 && i !== points.length - 1) return null
           const x = xAt(i)
@@ -190,11 +243,45 @@ export default function SpacesPage() {
             </text>
           )
         })}
+        
+        {/* Area fill */}
         <path d={areaD} fill="url(#areaFill)" />
+        
+        {/* Line */}
         <path d={pathD} fill="none" stroke="#4f46e5" strokeWidth="2.5" />
+        
+        {/* Data points */}
         {points.map((p, i) => (
-          <circle key={i} cx={xAt(i)} cy={yAt(p.value)} r="3.5" fill="#4f46e5" />
+          <g key={i}>
+            <circle cx={xAt(i)} cy={yAt(p.value)} r="4" fill="white" stroke="#4f46e5" strokeWidth="2" />
+            <circle cx={xAt(i)} cy={yAt(p.value)} r="2" fill="#4f46e5" />
+          </g>
         ))}
+        
+        {/* Y-axis label */}
+        <text 
+          x={m.left - 40} 
+          y={m.top + ih / 2} 
+          textAnchor="middle" 
+          fill="#6b7280" 
+          fontSize="11"
+          fontWeight="600"
+          transform={`rotate(-90, ${m.left - 40}, ${m.top + ih / 2})`}
+        >
+          Ruang Terpakai (ton)
+        </text>
+        
+        {/* X-axis label */}
+        <text 
+          x={m.left + iw / 2} 
+          y={H - 8} 
+          textAnchor="middle" 
+          fill="#6b7280" 
+          fontSize="11"
+          fontWeight="600"
+        >
+          Tanggal
+        </text>
       </svg>
     )
   }
@@ -517,15 +604,30 @@ export default function SpacesPage() {
           {showChart && canShowChart && (
             <div className="px-4 pb-4">
               <div className="rounded-xl border bg-white shadow-sm">
-                <div className="p-3 flex items-center justify-between text-sm text-gray-500 border-b">
-                  <span>Grafik ruang penyimpanan (ton)</span>
-                  <span className="flex items-center gap-1">
+                <div className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm border-b">
+                  <div>
+                    <span className="text-gray-700 font-medium">Grafik Ruang Penyimpanan</span>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Kapasitas maksimal: {fmtTon(warehouseCapacity)}
+                    </p>
+                  </div>
+                  <span className="flex items-center gap-1 text-gray-500">
                     <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                     Real-time
                   </span>
                 </div>
                 <div className="p-3">
-                  <SpaceLineChart points={chartPoints} />
+                  <SpaceLineChart points={chartPoints} maxCapacity={warehouseCapacity} />
+                </div>
+                <div className="px-3 pb-3 flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
+                    <span className="text-gray-600">Ruang Terpakai</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-0.5 w-4 border-t-2 border-dashed border-red-500"></div>
+                    <span className="text-gray-600">Kapasitas Maksimal</span>
+                  </div>
                 </div>
               </div>
             </div>
